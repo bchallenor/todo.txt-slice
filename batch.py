@@ -61,6 +61,9 @@ class Tag:
   def find_all(cls, raw):
     return {cls.handle_match(m) for m in cls.tag_re.finditer(raw)}
 
+  def sort_key(self):
+    raise NotImplementedError
+
   def __init__(self, raw):
     self.raw = raw
 
@@ -82,11 +85,17 @@ class ContextTag(Tag):
     self.name = name
     Tag.__init__(self, "@" + name)
 
+  def sort_key(self):
+    return (0, self.name, None)
+
 
 class ProjectTag(Tag):
   def __init__(self, name):
     self.name = name
     Tag.__init__(self, "+" + name)
+
+  def sort_key(self):
+    return (1, self.name, None)
 
 
 class KeyValueTag(Tag):
@@ -94,6 +103,9 @@ class KeyValueTag(Tag):
     self.key = key
     self.value = value
     Tag.__init__(self, key + ":" + value)
+
+  def sort_key(self):
+    return (2, self.key, self.value)
 
 
 class Task:
@@ -184,7 +196,7 @@ class Task:
 
   def add_tags(self, tags, prepend = False):
     title = self.title
-    for tag in tags - self.tags:
+    for tag in sorted(tags - self.tags, key = lambda tag: tag.sort_key()):
       title = tag.raw + " " + title if prepend else title + " " + tag.raw
     return Task(title, self.priority, self.create_date, self.complete_date)
 
