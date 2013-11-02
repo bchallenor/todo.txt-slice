@@ -94,14 +94,21 @@ class Task:
   @classmethod
   def load_all(cls, path):
     with open(path, "r", encoding="utf-8") as f:
-      return {i + 1: cls.parse(line.rstrip("\r\n")) for i, line in enumerate(f)}
+      tasks = {}
+      for i, line in enumerate(f):
+        id = i + 1
+        line1 = line.rstrip("\r\n")
+        if len(line1) > 0:
+          tasks[id] = cls.parse(line1)
+      return tasks
 
   @classmethod
   def save_all(cls, tasks, path):
     with open(path, "w", encoding="utf-8") as f:
-      for id in sorted(tasks.keys()):
-        task = tasks[id]
-        f.write(task.line)
+      for id in range(1, max(tasks.keys()) + 1):
+        if id in tasks:
+          task = tasks[id]
+          f.write(task.line)
         f.write("\n")
 
   @classmethod
@@ -177,7 +184,7 @@ class BatchEditContext:
         editable_task = editable_task.set_priority(None if self.priority else task.priority)
         editable_task = editable_task.set_create_date(None)
         editable_task = editable_task.add_tags(set([KeyValueTag("id", str(id))]))
-        editable_tasks[id] = editable_task
+        editable_tasks[len(editable_tasks) + 1] = editable_task
     return editable_tasks
 
   def merge_edited_tasks(self, edited_tasks):
