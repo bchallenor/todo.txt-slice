@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 import os
 import re
+import sys
 from datetime import date, datetime
+
+def log(str):
+  sys.stderr.write(str)
+  sys.stderr.write("\n")
+
 
 class Item:
   item_re = re.compile(r"""^
