@@ -27,27 +27,38 @@ class Tag:
     )
   """, re.VERBOSE)
 
-  @classmethod
-  def parse_all(cls, raw):
-    tags = set()
-    for m in cls.tag_re.finditer(raw):
-      prefix = m.group("prefix")
-      name = m.group("name")
-      key = m.group("key")
-      value = m.group("value")
-      if prefix:
-        assert name, "name should be captured if prefix is captured: %s" % raw
-        if prefix == "@":
-          tag = ContextTag(name)
-        elif prefix == "+":
-          tag = ProjectTag(name)
-        else:
-          assert false, "unknown prefix: %s" % prefix
+  @staticmethod
+  def handle_match(m):
+    raw = m.group(0)
+    prefix = m.group("prefix")
+    name = m.group("name")
+    key = m.group("key")
+    value = m.group("value")
+    if prefix:
+      assert name, "name should be captured if prefix is captured: %s" % raw
+      if prefix == "@":
+        tag = ContextTag(name)
+      elif prefix == "+":
+        tag = ProjectTag(name)
       else:
-        assert key and value, "key and value should be captured if prefix is not: %s" % raw
-        tag = KeyValueTag(key, value)
-      tags.add(tag)
-    return tags
+        assert false, "unknown prefix: %s" % prefix
+    else:
+      assert key and value, "key and value should be captured if prefix is not: %s" % raw
+      tag = KeyValueTag(key, value)
+    assert tag.raw == raw, "parsing should not lose information: <%s>" % raw
+    return tag
+
+  @classmethod
+  def parse(cls, raw):
+    m = cls.tag_re.match(raw)
+    if m and m.group(0) == raw: # check the whole string was matched
+      return cls.handle_match(m)
+    else:
+      return None
+
+  @classmethod
+  def find_all(cls, raw):
+    return {cls.handle_match(m) for m in cls.tag_re.finditer(raw)}
 
   def __init__(self, raw):
     self.raw = raw
@@ -143,7 +154,7 @@ class Task:
       "%s " % create_date.isoformat() if create_date else "",
       title
     ])
-    self.tags = Tag.parse_all(title)
+    self.tags = Tag.find_all(title)
 
   def __repr__(self):
     return self.line
