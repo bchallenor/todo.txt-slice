@@ -178,10 +178,10 @@ class Task:
       title = title.replace(   tag.raw   , "")
     return Task(title, self.priority, self.create_date, self.complete_date)
 
-  def add_tags(self, tags):
+  def add_tags(self, tags, prepend = False):
     title = self.title
     for tag in tags - self.tags:
-      title = title + " " + tag.raw
+      title = tag.raw + " " + title if prepend else title + " " + tag.raw
     return Task(title, self.priority, self.create_date, self.complete_date)
 
   def set_priority(self, priority):
@@ -198,14 +198,17 @@ class BatchEditContext:
     self.tags = tags
 
   def get_editable_tasks(self):
+    max_id = max(tasks.keys()) if len(tasks) > 0 else 0
+    max_id_len = len(str(max_id))
     editable_tasks = {}
     for id, task in tasks.items():
       if task.tags >= self.tags and (not self.priority or task.priority == self.priority):
+        id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
         editable_task = task
         editable_task = editable_task.remove_tags(self.tags)
         editable_task = editable_task.set_priority(None if self.priority else task.priority)
         editable_task = editable_task.set_create_date(None)
-        editable_task = editable_task.add_tags(set([KeyValueTag("id", str(id))]))
+        editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
         editable_tasks[len(editable_tasks) + 1] = editable_task
     return editable_tasks
 
