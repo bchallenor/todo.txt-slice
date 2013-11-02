@@ -11,6 +11,9 @@ class Item:
     (?P<title> .*? )
   $""", re.VERBOSE)
 
+  context_re = re.compile(r"@\S+")
+  project_re = re.compile(r"\+\S+")
+
   @staticmethod
   def parse_date(date_str):
     return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
@@ -38,6 +41,8 @@ class Item:
       "%s " % create_date.isoformat() if create_date else "",
       title
     ])
+    self.contexts = set(self.context_re.findall(title))
+    self.projects = set(self.project_re.findall(title))
 
   def __repr__(self):
     return self.line
