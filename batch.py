@@ -134,6 +134,10 @@ class Task:
           f.write("\n")
 
   @classmethod
+  def sorted(cls, tasks, key = lambda task: task.line):
+    return {i + 1: task for i, task in enumerate(sorted(tasks.values(), key = key))}
+
+  @classmethod
   def parse(cls, line):
     m = cls.task_re.match(line)
     assert m is not None, "task_re should match all lines: %s" % line
@@ -209,8 +213,8 @@ class BatchEditContext:
         editable_task = editable_task.set_priority(None if self.priority else task.priority)
         editable_task = editable_task.set_create_date(None)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
-        editable_tasks[len(editable_tasks) + 1] = editable_task
-    return editable_tasks
+        editable_tasks[id] = editable_task
+    return Task.sorted(editable_tasks)
 
   def merge_edited_tasks(self, edited_tasks):
     default_create_date = date.today() if date_on_add else None
