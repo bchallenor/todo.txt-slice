@@ -11,6 +11,8 @@ def log(str):
   sys.stderr.write("\n")
 
 
+editor_path = os.environ["EDITOR"]
+
 todo_file_path = os.environ["TODO_FILE"]
 date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
 
@@ -234,7 +236,7 @@ def edit(tasks):
   with tempfile.TemporaryDirectory() as temp_dir_path:
     temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
     Task.save_all(tasks, temp_todo_path)
-    subprocess.check_call([os.environ["EDITOR"], temp_todo_path]) #TODO: check this is defined
+    subprocess.check_call([editor_path, temp_todo_path])
     return Task.load_all(temp_todo_path)
 
 
