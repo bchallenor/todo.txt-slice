@@ -238,7 +238,7 @@ class BatchEditContext:
         existing_task = None
 
       task = task.set_create_date(existing_task.create_date if existing_task else default_create_date)
-      task = task.set_priority(task.priority or self.priority)
+      task = task.set_priority((task.priority or self.priority) if not task.complete_date else None)
       task = task.add_tags(self.tags)
 
       if existing_task != task:
