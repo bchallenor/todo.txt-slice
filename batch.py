@@ -2,6 +2,8 @@
 import os
 import re
 import sys
+import subprocess
+import tempfile
 from datetime import date, datetime
 
 def log(str):
@@ -160,7 +162,79 @@ class Task:
     return Task(self.title, self.priority, create_date, self.complete_date)
 
 
-tasks = Task.load_all(os.environ["TODO_FILE"])
-print(tasks)
+class BatchEditContext:
+  def __init__(self, tasks, priority = None, tags = set()):
+    self.tasks = tasks
+    self.priority = priority
+    self.tags = tags
 
+  def get_editable_tasks(self):
+    editable_tasks = {}
+    for id, task in tasks.items():
+      if task.tags >= self.tags and (not self.priority or task.priority == self.priority):
+        editable_task = task
+        editable_task = editable_task.remove_tags(self.tags)
+        editable_task = editable_task.set_priority(None if self.priority else task.priority)
+        editable_task = editable_task.set_create_date(None)
+        editable_task = editable_task.add_tags(set([KeyValueTag("id", str(id))]))
+        editable_tasks[id] = editable_task
+    return editable_tasks
+
+  def merge_edited_tasks(self, edited_tasks):
+    default_create_date = date.today() if "TODOTXT_DATE_ON_ADD" in os.environ else None
+
+    tasks = self.tasks.copy()
+    for edited_task in edited_tasks.values():
+      task = edited_task
+
+      id = None
+      for tag in task.tags:
+        if isinstance(tag, KeyValueTag) and tag.key == "id":
+          if id is None:
+            tmpid = int(tag.value)
+            if tmpid in tasks:
+              id = tmpid
+              task = task.remove_tags(set([tag]))
+            else:
+              log("ignoring invalid id: %s" % tag) #todo: test
+          else:
+            log("ignoring duplicate id: %s" % tag) #todo: test
+      if id:
+        existing_task = tasks[id]
+      else:
+        id = len(tasks) + 1
+        existing_task = None
+
+      task = task.set_create_date(existing_task.create_date if existing_task else default_create_date)
+      task = task.set_priority(task.priority or self.priority)
+      task = task.add_tags(self.tags)
+
+      if existing_task != task:
+        if existing_task:
+          log("- %d %s" % (id, existing_task))
+        log("+ %d %s" % (id, task))
+        tasks[id] = task
+
+    return tasks
+
+
+def edit(tasks):
+  # we want the file to be named todo.txt for compatibility with syntax-highlighting editors
+  with tempfile.TemporaryDirectory() as temp_dir_path:
+    temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
+    Task.save_all(tasks, temp_todo_path)
+    subprocess.check_call([os.environ["EDITOR"], temp_todo_path]) #TODO: check this is defined
+    return Task.load_all(temp_todo_path)
+
+
+
+todo_path = os.environ["TODO_FILE"]
+tasks = Task.load_all(todo_path)
+
+ctx = BatchEditContext(tasks, priority = "C", tags = set([ContextTag("groceries")]))
+#edited_tasks = {id: task.remove_tags(set([ContextTag("groceries")])) for id, task in tasks.items()}
+editable_tasks = ctx.get_editable_tasks()
+edited_tasks = edit(editable_tasks)
+tasks2 = ctx.merge_edited_tasks(edited_tasks)
+Task.save_all(tasks2, os.environ["TODO_FILE"] + "1")
 
