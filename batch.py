@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import subprocess
+import string
 import tempfile
 from datetime import date, datetime
 
@@ -272,12 +273,26 @@ if __name__ == "__main__":
     usage()
     sys.exit(0)
 
-  print(action, args)
+  priority = None
+  tags = set()
+
+  if len(args) > 0 and len(args[0]) == 1:
+    priority = args.pop(0)
+    if priority not in string.ascii_uppercase:
+      usage()
+      sys.exit(1)
+
+  while len(args) > 0:
+    arg = args.pop()
+    tag = Tag.parse(arg)
+    if not tag:
+      usage()
+      sys.exit(1)
+    tags.add(tag)
 
   tasks = Task.load_all(todo_file_path)
 
-  ctx = BatchEditContext(tasks, priority = "C", tags = set([ContextTag("groceries")]))
-  #edited_tasks = {id: task.remove_tags(set([ContextTag("groceries")])) for id, task in tasks.items()}
+  ctx = BatchEditContext(tasks, priority, tags)
   editable_tasks = ctx.get_editable_tasks()
   edited_tasks = edit(editable_tasks)
   tasks2 = ctx.merge_edited_tasks(edited_tasks)
