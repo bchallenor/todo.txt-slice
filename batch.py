@@ -72,6 +72,19 @@ class Task:
     return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
 
   @classmethod
+  def load_all(cls, path):
+    with open(path, "r", encoding="utf-8") as f:
+      return {i + 1: cls.parse(line.rstrip("\r\n")) for i, line in enumerate(f)}
+
+  @classmethod
+  def save_all(cls, tasks, path):
+    with open(path, "w", encoding="utf-8") as f:
+      for id in sorted(tasks.keys()):
+        task = tasks[id]
+        f.write(task.line)
+        f.write("\n")
+
+  @classmethod
   def parse(cls, line):
     m = cls.task_re.match(line)
     assert m is not None, "task_re should match all lines: %s" % line
@@ -100,11 +113,7 @@ class Task:
     return self.line
 
 
-def get_tasks(path):
-  with open(path, "r") as f:
-    return {i + 1: Task.parse(line.rstrip("\r\n")) for i, line in enumerate(f)}
-
-tasks = get_tasks(os.environ["TODO_FILE"])
+tasks = Task.load_all(os.environ["TODO_FILE"])
 print(tasks)
 
 
