@@ -217,10 +217,10 @@ class BatchEditContext:
     return task.tags >= self.tags and (not self.priority or task.priority == self.priority)
 
   def get_editable_tasks(self):
-    max_id = max(tasks.keys()) if len(tasks) > 0 else 0
+    max_id = max(self.tasks.keys()) if len(self.tasks) > 0 else 0
     max_id_len = len(str(max_id))
     editable_tasks = {}
-    for id, task in tasks.items():
+    for id, task in self.tasks.items():
       if self.is_editable_task(task):
         id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
         editable_task = task
@@ -287,10 +287,7 @@ def usage():
   print()
 
 
-if __name__ == "__main__":
-  action = sys.argv[1]
-  args = sys.argv[2:]
-
+def main(action, args):
   if action == "usage":
     usage()
     sys.exit(0)
@@ -319,4 +316,10 @@ if __name__ == "__main__":
   edited_tasks = edit(editable_tasks)
   tasks2 = ctx.merge_edited_tasks(edited_tasks)
   Task.save_all(tasks2, todo_file_path)
+
+
+if __name__ == "__main__":
+  action = sys.argv[1]
+  args = sys.argv[2:]
+  main(action, args)
 
