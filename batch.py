@@ -299,5 +299,5 @@ if __name__ == "__main__":
   editable_tasks = ctx.get_editable_tasks()
   edited_tasks = edit(editable_tasks)
   tasks2 = ctx.merge_edited_tasks(edited_tasks)
-  Task.save_all(tasks2, todo_file_path + "1")
+  Task.save_all(tasks2, todo_file_path)
 
