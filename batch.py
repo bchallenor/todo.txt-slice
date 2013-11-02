@@ -229,32 +229,42 @@ class BatchEditContext:
         editable_task = editable_task.set_create_date(None)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
         editable_tasks[id] = editable_task
-    return Task.sorted(editable_tasks)
+    return editable_tasks
 
-  def merge_edited_tasks(self, edited_tasks):
-    default_create_date = date.today() if date_on_add else None
-
-    tasks = self.tasks.copy()
-    for edited_task in edited_tasks.values():
-      task = edited_task
-
+  def recover_task_ids(self, editable_tasks, edited_tasks):
+    recovered_edited_tasks = {}
+    next_id = len(self.tasks) + 1
+    for task in edited_tasks.values():
       id = None
       for tag in task.tags:
         if isinstance(tag, KeyValueTag) and tag.key == "id":
           if id is None:
             tmpid = int(tag.value)
-            if tmpid in tasks:
+            task = task.remove_tags(set([tag]))
+            if tmpid in editable_tasks: # safety check
               id = tmpid
-              task = task.remove_tags(set([tag]))
             else:
               log("ignoring invalid id: %s" % tag) #todo: test
           else:
             log("ignoring duplicate id: %s" % tag) #todo: test
-      if id:
-        existing_task = tasks[id]
-      else:
-        id = len(tasks) + 1
-        existing_task = None
+      if id is None:
+        id = next_id
+        next_id += 1
+      recovered_edited_tasks[id] = task
+    return recovered_edited_tasks
+
+  def merge_edited_tasks(self, editable_tasks, edited_tasks):
+    recovered_edited_tasks = self.recover_task_ids(editable_tasks, edited_tasks)
+    merged_tasks = self.tasks.copy()
+
+    for id in editable_tasks.keys() - recovered_edited_tasks.keys():
+      existing_task = merged_tasks[id]
+      log("- %d %s" % (id, existing_task))
+      del merged_tasks[id]
+
+    default_create_date = date.today() if date_on_add else None
+    for id, task in recovered_edited_tasks.items():
+      existing_task = merged_tasks[id] if id in merged_tasks else None
 
       task = task.set_create_date(existing_task.create_date if existing_task else default_create_date)
       task = task.set_priority((task.priority or self.priority) if not task.complete_date else None)
@@ -264,9 +274,9 @@ class BatchEditContext:
         if existing_task:
           log("- %d %s" % (id, existing_task))
         log("+ %d %s" % (id, task))
-        tasks[id] = task
+        merged_tasks[id] = task
 
-    return tasks
+    return merged_tasks
 
 
 def edit(tasks):
@@ -313,9 +323,9 @@ def main(action, args):
 
   ctx = BatchEditContext(tasks, priority, tags)
   editable_tasks = ctx.get_editable_tasks()
-  edited_tasks = edit(editable_tasks)
-  tasks2 = ctx.merge_edited_tasks(edited_tasks)
-  Task.save_all(tasks2, todo_file_path)
+  edited_tasks = edit(Task.sorted(editable_tasks))
+  merged_tasks = ctx.merge_edited_tasks(editable_tasks, edited_tasks)
+  Task.save_all(merged_tasks, todo_file_path)
 
 
 if __name__ == "__main__":
