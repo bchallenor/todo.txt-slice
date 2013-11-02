@@ -8,29 +8,44 @@ class Item:
     ( x \s+ (?P<complete> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
     ( \( (?P<priority> [A-Z] ) \) \s+ )?
     ( (?P<create> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
-    ( (?P<title> .*? ) \s* )
+    (?P<title> .*? )
   $""", re.VERBOSE)
 
   @staticmethod
   def parse_date(date_str):
-    return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str is not None else None
+    return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
 
-  def __init__(self, line):
-    self.line = line
-    m = self.item_re.match(self.line)
+  @classmethod
+  def parse(cls, line):
+    m = cls.item_re.match(line)
     assert m is not None, "item_re should match all lines: %s" % line
-    self.creation_date = self.parse_date(m.group("create"))
-    self.completion_date = self.parse_date(m.group("complete"))
-    self.priority = m.group("priority")
-    self.title = m.group("title")
+    title = m.group("title")
+    priority = m.group("priority")
+    create_date = cls.parse_date(m.group("create"))
+    complete_date = cls.parse_date(m.group("complete"))
+    item = cls(title, priority, create_date, complete_date)
+    assert item.line == line, "parsing should not lose information: <%s>" % line
+    return item
+
+  def __init__(self, title, priority, create_date = date.today(), complete_date = None):
+    self.title = title
+    self.priority = priority
+    self.create_date = create_date
+    self.complete_date = complete_date
+    self.line = "".join([
+      "x %s " % complete_date.isoformat() if complete_date else "",
+      "(%s) " % priority if priority else "",
+      "%s " % create_date.isoformat() if create_date else "",
+      title
+    ])
 
   def __repr__(self):
-    return str((self.completion_date, self.priority, self.creation_date, self.title))
+    return self.line
 
 
 def get_items(path):
   with open(path, "r") as f:
-    return {i + 1: Item(line.rstrip("\r\n")) for i, line in enumerate(f)}
+    return {i + 1: Item.parse(line.rstrip("\r\n")) for i, line in enumerate(f)}
 
 items = get_items(os.environ["TODO_FILE"])
 print(items)
