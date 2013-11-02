@@ -255,17 +255,21 @@ def edit(tasks):
     return Task.load_all(temp_todo_path)
 
 
+def usage():
+  # TODO: detect script name
+  print("  batch.py [PRIORITY] [TAG...]")
+  print("    Opens tasks matching PRIORITY and/or TAG(s) for batch editing in $EDITOR.")
+  print("    After editing, changes will be merged back into todo.txt.")
+  print("    PRIORITY and TAG(s) will be automatically applied.")
+  print()
+
+
 if __name__ == "__main__":
   action = sys.argv[1]
   args = sys.argv[2:]
 
   if action == "usage":
-    # TODO: detect script name
-    print("  batch.py [PRIORITY] [TAG...]")
-    print("    Opens tasks matching PRIORITY and/or TAG(s) for batch editing in $EDITOR.")
-    print("    After editing, changes will be merged back into todo.txt.")
-    print("    PRIORITY and TAG(s) will be automatically applied.")
-    print()
+    usage()
     sys.exit(0)
 
   print(action, args)
