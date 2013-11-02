@@ -11,29 +11,37 @@ def log(str):
 
 class Tag:
   tag_re = re.compile(r"""
-    (?P<prefix> [@+] )
-    (?P<key> \S+? )
-    (: (?P<value> \S+ ) )?
-    \b
+    (
+      (?P<prefix> [@+] )(?P<name> \S+ )
+    |
+      (?P<key> \S+? ) : (?P<value> \S+ )
+    )
   """, re.VERBOSE)
 
   @classmethod
   def parse_all(cls, raw):
-    prefix_to_cls = { Context.prefix: Context, Project.prefix: Project }
     tags = set()
     for m in cls.tag_re.finditer(raw):
       prefix = m.group("prefix")
+      name = m.group("name")
       key = m.group("key")
       value = m.group("value")
-      tag = prefix_to_cls[prefix](key, value)
+      if prefix:
+        assert name, "name should be captured if prefix is captured: %s" % raw
+        if prefix == "@":
+          tag = ContextTag(name)
+        elif prefix == "+":
+          tag = ProjectTag(name)
+        else:
+          assert false, "unknown prefix: %s" % prefix
+      else:
+        assert key and value, "key and value should be captured if prefix is not: %s" % raw
+        tag = KeyValueTag(key, value)
       tags.add(tag)
     return tags
 
-  def __init__(self, prefix, key, value):
-    self.prefix = prefix
-    self.key = key
-    self.value = value
-    self.raw = prefix + key + (value if value else "")
+  def __init__(self, raw):
+    self.raw = raw
 
   def __repr__(self):
     return self.raw
@@ -45,18 +53,23 @@ class Tag:
     return self.raw.__hash__()
 
 
-class Project(Tag):
-  prefix = "+"
+class ContextTag(Tag):
+  def __init__(self, name):
+    self.name = name
+    Tag.__init__(self, "@" + name)
 
+
+class ProjectTag(Tag):
+  def __init__(self, name):
+    self.name = name
+    Tag.__init__(self, "+" + name)
+
+
+class KeyValueTag(Tag):
   def __init__(self, key, value):
-    Tag.__init__(self, self.prefix, key, value)
-
-
-class Context(Tag):
-  prefix = "@"
-
-  def __init__(self, key, value):
-    Tag.__init__(self, self.prefix, key, value)
+    self.key = key
+    self.value = value
+    Tag.__init__(self, key + ":" + value)
 
 
 class Task:
