@@ -9,8 +9,8 @@ def log(str):
   sys.stderr.write("\n")
 
 
-class Item:
-  item_re = re.compile(r"""^
+class Task:
+  task_re = re.compile(r"""^
     ( x \s+ (?P<complete> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
     ( \( (?P<priority> [A-Z] ) \) \s+ )?
     ( (?P<create> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
@@ -26,15 +26,15 @@ class Item:
 
   @classmethod
   def parse(cls, line):
-    m = cls.item_re.match(line)
-    assert m is not None, "item_re should match all lines: %s" % line
+    m = cls.task_re.match(line)
+    assert m is not None, "task_re should match all lines: %s" % line
     title = m.group("title")
     priority = m.group("priority")
     create_date = cls.parse_date(m.group("create"))
     complete_date = cls.parse_date(m.group("complete"))
-    item = cls(title, priority, create_date, complete_date)
-    assert item.line == line, "parsing should not lose information: <%s>" % line
-    return item
+    task = cls(title, priority, create_date, complete_date)
+    assert task.line == line, "parsing should not lose information: <%s>" % line
+    return task
 
   def __init__(self, title, priority, create_date = date.today(), complete_date = None):
     self.title = title
@@ -54,10 +54,11 @@ class Item:
     return self.line
 
 
-def get_items(path):
+def get_tasks(path):
   with open(path, "r") as f:
-    return {i + 1: Item.parse(line.rstrip("\r\n")) for i, line in enumerate(f)}
+    return {i + 1: Task.parse(line.rstrip("\r\n")) for i, line in enumerate(f)}
 
-items = get_items(os.environ["TODO_FILE"])
-print(items)
+tasks = get_tasks(os.environ["TODO_FILE"])
+print(tasks)
+
 
