@@ -9,6 +9,56 @@ def log(str):
   sys.stderr.write("\n")
 
 
+class Tag:
+  tag_re = re.compile(r"""
+    (?P<prefix> [@+] )
+    (?P<key> \S+? )
+    (: (?P<value> \S+ ) )?
+    \b
+  """, re.VERBOSE)
+
+  @classmethod
+  def parse_all(cls, raw):
+    prefix_to_cls = { Context.prefix: Context, Project.prefix: Project }
+    tags = set()
+    for m in cls.tag_re.finditer(raw):
+      prefix = m.group("prefix")
+      key = m.group("key")
+      value = m.group("value")
+      tag = prefix_to_cls[prefix](key, value)
+      tags.add(tag)
+    return tags
+
+  def __init__(self, prefix, key, value):
+    self.prefix = prefix
+    self.key = key
+    self.value = value
+    self.raw = prefix + key + (value if value else "")
+
+  def __repr__(self):
+    return self.raw
+
+  def __eq__(self, other):
+    return self.raw.__eq__(other.raw)
+
+  def __hash__(self):
+    return self.raw.__hash__()
+
+
+class Project(Tag):
+  prefix = "+"
+
+  def __init__(self, key, value):
+    Tag.__init__(self, self.prefix, key, value)
+
+
+class Context(Tag):
+  prefix = "@"
+
+  def __init__(self, key, value):
+    Tag.__init__(self, self.prefix, key, value)
+
+
 class Task:
   task_re = re.compile(r"""^
     ( x \s+ (?P<complete> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
@@ -16,9 +66,6 @@ class Task:
     ( (?P<create> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
     (?P<title> .*? )
   $""", re.VERBOSE)
-
-  context_re = re.compile(r"@\S+")
-  project_re = re.compile(r"\+\S+")
 
   @staticmethod
   def parse_date(date_str):
@@ -47,8 +94,7 @@ class Task:
       "%s " % create_date.isoformat() if create_date else "",
       title
     ])
-    self.contexts = set(self.context_re.findall(title))
-    self.projects = set(self.project_re.findall(title))
+    self.tags = Tag.parse_all(title)
 
   def __repr__(self):
     return self.line
