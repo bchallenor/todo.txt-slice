@@ -47,7 +47,10 @@ class Tag:
     return self.raw
 
   def __eq__(self, other):
-    return self.raw.__eq__(other.raw)
+    return other is not None and self.raw.__eq__(other.raw)
+
+  def __ne__(self, other):
+    return not self.__eq__(other)
 
   def __hash__(self):
     return self.raw.__hash__()
