@@ -213,12 +213,15 @@ class BatchEditContext:
     self.priority = priority
     self.tags = tags
 
+  def is_editable_task(self, task):
+    return task.tags >= self.tags and (not self.priority or task.priority == self.priority)
+
   def get_editable_tasks(self):
     max_id = max(tasks.keys()) if len(tasks) > 0 else 0
     max_id_len = len(str(max_id))
     editable_tasks = {}
     for id, task in tasks.items():
-      if task.tags >= self.tags and (not self.priority or task.priority == self.priority):
+      if self.is_editable_task(task):
         id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
         editable_task = task
         editable_task = editable_task.remove_tags(self.tags)
