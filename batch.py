@@ -139,6 +139,26 @@ class Task:
   def __hash__(self):
     return self.line.__hash__()
 
+  def remove_tags(self, tags):
+    title = self.title
+    for tag in tags & self.tags:
+      title = title.replace(" " + tag.raw, "")
+      title = title.replace(tag.raw + " ", "")
+      title = title.replace(   tag.raw   , "")
+    return Task(title, self.priority, self.create_date, self.complete_date)
+
+  def add_tags(self, tags):
+    title = self.title
+    for tag in tags - self.tags:
+      title = title + " " + tag.raw
+    return Task(title, self.priority, self.create_date, self.complete_date)
+
+  def set_priority(self, priority):
+    return Task(self.title, priority, self.create_date, self.complete_date)
+
+  def set_create_date(self, create_date):
+    return Task(self.title, self.priority, create_date, self.complete_date)
+
 
 tasks = Task.load_all(os.environ["TODO_FILE"])
 print(tasks)
