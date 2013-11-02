@@ -73,12 +73,14 @@ class KeyValueTag(Tag):
 
 
 class Task:
-  task_re = re.compile(r"""^
+  task_re = re.compile(r"""
+    ^
     ( x \s+ (?P<complete> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
     ( \( (?P<priority> [A-Z] ) \) \s+ )?
     ( (?P<create> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
     (?P<title> .*? )
-  $""", re.VERBOSE)
+    $
+  """, re.VERBOSE)
 
   @staticmethod
   def parse_date(date_str):
