@@ -243,13 +243,27 @@ def edit(tasks):
     return Task.load_all(temp_todo_path)
 
 
+if __name__ == "__main__":
+  action = sys.argv[1]
+  args = sys.argv[2:]
 
-tasks = Task.load_all(todo_file_path)
+  if action == "usage":
+    # TODO: detect script name
+    print("  batch.py [PRIORITY] [TAG...]")
+    print("    Opens tasks matching PRIORITY and/or TAG(s) for batch editing in $EDITOR.")
+    print("    After editing, changes will be merged back into todo.txt.")
+    print("    PRIORITY and TAG(s) will be automatically applied.")
+    print()
+    sys.exit(0)
 
-ctx = BatchEditContext(tasks, priority = "C", tags = set([ContextTag("groceries")]))
-#edited_tasks = {id: task.remove_tags(set([ContextTag("groceries")])) for id, task in tasks.items()}
-editable_tasks = ctx.get_editable_tasks()
-edited_tasks = edit(editable_tasks)
-tasks2 = ctx.merge_edited_tasks(edited_tasks)
-Task.save_all(tasks2, todo_file_path + "1")
+  print(action, args)
+
+  tasks = Task.load_all(todo_file_path)
+
+  ctx = BatchEditContext(tasks, priority = "C", tags = set([ContextTag("groceries")]))
+  #edited_tasks = {id: task.remove_tags(set([ContextTag("groceries")])) for id, task in tasks.items()}
+  editable_tasks = ctx.get_editable_tasks()
+  edited_tasks = edit(editable_tasks)
+  tasks2 = ctx.merge_edited_tasks(edited_tasks)
+  Task.save_all(tasks2, todo_file_path + "1")
 
