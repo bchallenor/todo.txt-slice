@@ -130,6 +130,15 @@ class Task:
   def __repr__(self):
     return self.line
 
+  def __eq__(self, other):
+    return other is not None and self.line.__eq__(other.line)
+
+  def __ne__(self, other):
+    return not self.__eq__(other)
+
+  def __hash__(self):
+    return self.line.__hash__()
+
 
 tasks = Task.load_all(os.environ["TODO_FILE"])
 print(tasks)
