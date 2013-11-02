@@ -15,6 +15,7 @@ editor_path = os.environ["EDITOR"]
 
 todo_file_path = os.environ["TODO_FILE"]
 date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
+preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
 
 
 class Tag:
@@ -115,7 +116,9 @@ class Task:
         if id in tasks:
           task = tasks[id]
           f.write(task.line)
-        f.write("\n")
+          f.write("\n")
+        elif preserve_line_numbers:
+          f.write("\n")
 
   @classmethod
   def parse(cls, line):
