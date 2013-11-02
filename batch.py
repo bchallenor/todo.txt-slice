@@ -123,7 +123,8 @@ class Task:
   @classmethod
   def save_all(cls, tasks, path):
     with open(path, "w", encoding="utf-8") as f:
-      for id in range(1, max(tasks.keys()) + 1):
+      max_id = max(tasks.keys()) if len(tasks) > 0 else 0
+      for id in range(1, max_id + 1):
         if id in tasks:
           task = tasks[id]
           f.write(task.line)
