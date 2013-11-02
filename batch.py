@@ -11,6 +11,10 @@ def log(str):
   sys.stderr.write("\n")
 
 
+todo_file_path = os.environ["TODO_FILE"]
+date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
+
+
 class Tag:
   tag_re = re.compile(r"""
     (
@@ -188,7 +192,7 @@ class BatchEditContext:
     return editable_tasks
 
   def merge_edited_tasks(self, edited_tasks):
-    default_create_date = date.today() if "TODOTXT_DATE_ON_ADD" in os.environ else None
+    default_create_date = date.today() if date_on_add else None
 
     tasks = self.tasks.copy()
     for edited_task in edited_tasks.values():
@@ -235,13 +239,12 @@ def edit(tasks):
 
 
 
-todo_path = os.environ["TODO_FILE"]
-tasks = Task.load_all(todo_path)
+tasks = Task.load_all(todo_file_path)
 
 ctx = BatchEditContext(tasks, priority = "C", tags = set([ContextTag("groceries")]))
 #edited_tasks = {id: task.remove_tags(set([ContextTag("groceries")])) for id, task in tasks.items()}
 editable_tasks = ctx.get_editable_tasks()
 edited_tasks = edit(editable_tasks)
 tasks2 = ctx.merge_edited_tasks(edited_tasks)
-Task.save_all(tasks2, os.environ["TODO_FILE"] + "1")
+Task.save_all(tasks2, todo_file_path + "1")
 
