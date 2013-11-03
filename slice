@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from datetime import date, datetime, timedelta
+import difflib
 import os
 import re
 import string
@@ -18,6 +19,35 @@ todo_file_path = os.environ["TODO_FILE"]
 date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
 default_create_date = date.today() if date_on_add else None
 preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
+
+
+class ColorDiff:
+  __CYAN = "\033[36m"
+  __RED = "\033[31m"
+  __GREEN = "\033[32m"
+  __DEFAULT = "\033[0m"
+
+  # prints colored diff lines to the terminal
+  @classmethod
+  def diff(cls, header, a, b):
+    a_out = [cls.__CYAN, header]
+    b_out = [cls.__CYAN, header]
+
+    sm = difflib.SequenceMatcher(a = a, b = b, autojunk = False)
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+      a_out.append(cls.__RED if tag == "replace" or tag == "delete" else cls.__DEFAULT)
+      a_out.append(a[i1:i2])
+      b_out.append(cls.__GREEN if tag == "replace" or tag == "insert" else cls.__DEFAULT)
+      b_out.append(b[j1:j2])
+
+    a_out.append(cls.__DEFAULT)
+    b_out.append(cls.__DEFAULT)
+
+    if len(a) > 0:
+      print("".join(a_out))
+    if len(b) > 0:
+      print("".join(b_out))
+    print()
 
 
 class Tag:
@@ -348,13 +378,13 @@ class BatchEditor:
   def __init__(self, tasks, task_filter):
     self.tasks = tasks
     self.task_filter = task_filter
-    self.editable_tasks = self.__get_editable_tasks(tasks, task_filter)
+    self.max_id = max(tasks.keys()) if len(tasks) > 0 else 0
+    self.max_id_len = len(str(self.max_id))
+    self.editable_tasks = self.__get_editable_tasks(tasks, task_filter, self.max_id_len)
     self.sorted_editable_tasks = Task.sorted(self.editable_tasks)
 
   @staticmethod
-  def __get_editable_tasks(tasks, task_filter):
-    max_id = max(tasks.keys()) if len(tasks) > 0 else 0
-    max_id_len = len(str(max_id))
+  def __get_editable_tasks(tasks, task_filter, max_id_len):
     editable_tasks = {}
     for id, task in tasks.items():
       if not task.is_hidden() and task_filter.matches(task):
@@ -382,13 +412,19 @@ class BatchEditor:
       recovered_edited_tasks[id] = task
     return recovered_edited_tasks
 
+  def __diff(self, id, task_a, task_b):
+    header = "%s " % str(id).zfill(self.max_id_len)
+    log_a = task_a.line if task_a else ""
+    log_b = task_b.line if task_b else ""
+    ColorDiff.diff(header, log_a, log_b)
+
   def __merge_edited_tasks(self, edited_tasks):
     recovered_edited_tasks = self.__recover_task_ids(edited_tasks)
     merged_tasks = self.tasks.copy()
 
     for id in self.editable_tasks.keys() - recovered_edited_tasks.keys():
       existing_task = merged_tasks[id]
-      log("- %d %s" % (id, existing_task))
+      self.__diff(id, existing_task, None)
       del merged_tasks[id]
 
     for id, edited_task in recovered_edited_tasks.items():
@@ -397,9 +433,7 @@ class BatchEditor:
       task = self.task_filter.unapply(edited_task, existing_task)
 
       if existing_task != task:
-        if existing_task:
-          log("- %d %s" % (id, existing_task))
-        log("+ %d %s" % (id, task))
+        self.__diff(id, existing_task, task)
         merged_tasks[id] = task
 
     return merged_tasks
