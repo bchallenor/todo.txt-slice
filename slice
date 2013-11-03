@@ -426,8 +426,8 @@ def build_review_filter(args):
   priority_to_review_age = {
       "A": timedelta(days = 1),
       "B": timedelta(days = 7),
-      "C": timedelta(days = 28),
-      "Z": timedelta(days = 180)
+      "C": timedelta(days = 56),
+      "Z": timedelta(days = 182)
   }
   return ReviewTaskFilter(no_priority_review_age, priority_to_review_age)
 
