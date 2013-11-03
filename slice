@@ -73,7 +73,7 @@ class Tag:
       elif prefix == "+":
         tag = ProjectTag(name)
       else:
-        assert false, "unknown prefix: %s" % prefix
+        assert False, "unknown prefix: %s" % prefix
     else:
       assert key and value, "key and value should be captured if prefix is not: %s" % raw
       tag = KeyValueTag(key, value)
@@ -331,7 +331,7 @@ class ReviewTaskFilter(TaskFilter):
 
   def matches(self, task):
     if not task.create_date:
-      return true
+      return True
     age = date.today() - task.create_date
     review_age = self.priority_to_review_age[task.priority] if task.priority else self.no_priority_review_age
     return age >= review_age
