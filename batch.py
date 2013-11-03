@@ -212,26 +212,25 @@ class BatchEditContext:
     self.tasks = tasks
     self.priority = priority
     self.tags = tags
+    self.editable_tasks = self.get_editable_tasks(tasks, priority, tags)
 
-  def is_editable_task(self, task):
-    return task.tags >= self.tags and (not self.priority or task.priority == self.priority)
-
-  def get_editable_tasks(self):
-    max_id = max(self.tasks.keys()) if len(self.tasks) > 0 else 0
+  @staticmethod
+  def get_editable_tasks(tasks, priority, tags):
+    max_id = max(tasks.keys()) if len(tasks) > 0 else 0
     max_id_len = len(str(max_id))
     editable_tasks = {}
-    for id, task in self.tasks.items():
-      if self.is_editable_task(task):
+    for id, task in tasks.items():
+      if task.tags >= tags and (not priority or task.priority == priority):
         id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
         editable_task = task
-        editable_task = editable_task.remove_tags(self.tags)
-        editable_task = editable_task.set_priority(None if self.priority else task.priority)
+        editable_task = editable_task.remove_tags(tags)
+        editable_task = editable_task.set_priority(None if priority else task.priority)
         editable_task = editable_task.set_create_date(None)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
         editable_tasks[id] = editable_task
     return editable_tasks
 
-  def recover_task_ids(self, editable_tasks, edited_tasks):
+  def recover_task_ids(self, edited_tasks):
     recovered_edited_tasks = {}
     next_id = len(self.tasks) + 1
     for task in edited_tasks.values():
@@ -241,7 +240,7 @@ class BatchEditContext:
           if id is None:
             tmpid = int(tag.value)
             task = task.remove_tags(set([tag]))
-            if tmpid in editable_tasks: # safety check
+            if tmpid in self.editable_tasks: # safety check
               id = tmpid
             else:
               log("ignoring invalid id: %s" % tag) #todo: test
@@ -253,11 +252,11 @@ class BatchEditContext:
       recovered_edited_tasks[id] = task
     return recovered_edited_tasks
 
-  def merge_edited_tasks(self, editable_tasks, edited_tasks):
-    recovered_edited_tasks = self.recover_task_ids(editable_tasks, edited_tasks)
+  def merge_edited_tasks(self, edited_tasks):
+    recovered_edited_tasks = self.recover_task_ids(edited_tasks)
     merged_tasks = self.tasks.copy()
 
-    for id in editable_tasks.keys() - recovered_edited_tasks.keys():
+    for id in self.editable_tasks.keys() - recovered_edited_tasks.keys():
       existing_task = merged_tasks[id]
       log("- %d %s" % (id, existing_task))
       del merged_tasks[id]
@@ -322,9 +321,8 @@ def main(action, args):
   tasks = Task.load_all(todo_file_path)
 
   ctx = BatchEditContext(tasks, priority, tags)
-  editable_tasks = ctx.get_editable_tasks()
-  edited_tasks = edit(Task.sorted(editable_tasks))
-  merged_tasks = ctx.merge_edited_tasks(editable_tasks, edited_tasks)
+  edited_tasks = edit(Task.sorted(ctx.editable_tasks))
+  merged_tasks = ctx.merge_edited_tasks(edited_tasks)
   Task.save_all(merged_tasks, todo_file_path)
 
 
