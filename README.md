@@ -1,4 +1,4 @@
-todo.txt-slice: Slices tasks from todo.txt for batch editing
+todo.txt-slice: Slices tasks for batch editing
 ============================================================
 
 _documentation to follow_
