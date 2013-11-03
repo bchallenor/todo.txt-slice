@@ -201,6 +201,16 @@ class Task:
       title = tag.raw + " " + title if prepend else title + " " + tag.raw
     return Task(title, self.priority, self.create_date, self.complete_date)
 
+  def pop_key_value_tag(self, key):
+    tags = { tag for tag in self.tags if isinstance(tag, KeyValueTag) and tag.key == key }
+    if len(tags) == 0:
+      return None, self
+    task = self.remove_tags(tags)
+    tag = tags.pop()
+    if len(tags) > 0:
+      log("discarding duplicate tags: %s" % tags) # TODO: test
+    return tag, task
+
   def set_priority(self, priority):
     return Task(self.title, priority, self.create_date, self.complete_date)
 
@@ -285,17 +295,13 @@ class BatchEditor:
     next_id = len(self.tasks) + 1
     for task in edited_tasks.values():
       id = None
-      for tag in task.tags:
-        if isinstance(tag, KeyValueTag) and tag.key == "id":
-          if id is None:
-            tmpid = int(tag.value)
-            task = task.remove_tags(set([tag]))
-            if tmpid in self.editable_tasks: # safety check
-              id = tmpid
-            else:
-              log("ignoring invalid id: %s" % tag) #todo: test
-          else:
-            log("ignoring duplicate id: %s" % tag) #todo: test
+      id_tag, task = task.pop_key_value_tag("id")
+      if id_tag:
+        tmpid = int(id_tag.value)
+        if tmpid in self.editable_tasks: # safety check
+          id = tmpid
+        else:
+          log("ignoring invalid id: %s" % id_tag) #todo: test
       if id is None:
         id = next_id
         next_id += 1
