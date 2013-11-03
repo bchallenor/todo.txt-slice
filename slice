@@ -288,12 +288,11 @@ class ReviewTaskFilter(TaskFilter):
     cmd_tag = KeyValueTag("cmd", "_")
     filtered_task = task
     filtered_task = filtered_task.add_tags(set([cmd_tag]), prepend = True)
-    filtered_task = filtered_task.set_create_date(None)
     return filtered_task
 
   def unapply(self, filtered_task, original_task):
     task = filtered_task
-    create_date = original_task.create_date if original_task else default_create_date
+    create_date = task.create_date
     priority = task.priority if not task.complete_date else None
 
     cmd_tag, task = task.pop_key_value_tag("cmd")
