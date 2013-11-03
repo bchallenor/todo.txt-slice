@@ -207,12 +207,13 @@ class Task:
     return Task(self.title, self.priority, create_date, self.complete_date)
 
 
-class BatchEditContext:
+class BatchEditor:
   def __init__(self, tasks, priority = None, tags = set()):
     self.tasks = tasks
     self.priority = priority
     self.tags = tags
     self.editable_tasks = self.__get_editable_tasks(tasks, priority, tags)
+    self.sorted_editable_tasks = Task.sorted(self.editable_tasks)
 
   @staticmethod
   def __get_editable_tasks(tasks, priority, tags):
@@ -252,7 +253,7 @@ class BatchEditContext:
       recovered_edited_tasks[id] = task
     return recovered_edited_tasks
 
-  def merge_edited_tasks(self, edited_tasks):
+  def __merge_edited_tasks(self, edited_tasks):
     recovered_edited_tasks = self.__recover_task_ids(edited_tasks)
     merged_tasks = self.tasks.copy()
 
@@ -277,14 +278,19 @@ class BatchEditContext:
 
     return merged_tasks
 
+  @staticmethod
+  def __edit(tasks):
+    # we want the file to be named todo.txt for compatibility with syntax-highlighting editors
+    with tempfile.TemporaryDirectory() as temp_dir_path:
+      temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
+      Task.save_all(tasks, temp_todo_path)
+      subprocess.check_call([editor_path, temp_todo_path])
+      return Task.load_all(temp_todo_path)
 
-def edit(tasks):
-  # we want the file to be named todo.txt for compatibility with syntax-highlighting editors
-  with tempfile.TemporaryDirectory() as temp_dir_path:
-    temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
-    Task.save_all(tasks, temp_todo_path)
-    subprocess.check_call([editor_path, temp_todo_path])
-    return Task.load_all(temp_todo_path)
+  def edit_and_merge(self):
+    edited_tasks = self.__edit(self.sorted_editable_tasks)
+    merged_tasks = self.__merge_edited_tasks(edited_tasks)
+    return merged_tasks
 
 
 def usage():
@@ -320,9 +326,8 @@ def main(action, args):
 
   tasks = Task.load_all(todo_file_path)
 
-  ctx = BatchEditContext(tasks, priority, tags)
-  edited_tasks = edit(Task.sorted(ctx.editable_tasks))
-  merged_tasks = ctx.merge_edited_tasks(edited_tasks)
+  editor = BatchEditor(tasks, priority, tags)
+  merged_tasks = editor.edit_and_merge()
   Task.save_all(merged_tasks, todo_file_path)
 
 
