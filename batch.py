@@ -20,7 +20,7 @@ preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
 
 
 class Tag:
-  tag_re = re.compile(r"""
+  __tag_re = re.compile(r"""
     (
       (?P<prefix> [@+] )(?P<name> \S+ )
     |
@@ -29,7 +29,7 @@ class Tag:
   """, re.VERBOSE)
 
   @staticmethod
-  def handle_match(m):
+  def __handle_match(m):
     raw = m.group(0)
     prefix = m.group("prefix")
     name = m.group("name")
@@ -51,15 +51,15 @@ class Tag:
 
   @classmethod
   def parse(cls, raw):
-    m = cls.tag_re.match(raw)
+    m = cls.__tag_re.match(raw)
     if m and m.group(0) == raw: # check the whole string was matched
-      return cls.handle_match(m)
+      return cls.__handle_match(m)
     else:
       return None
 
   @classmethod
   def find_all(cls, raw):
-    return {cls.handle_match(m) for m in cls.tag_re.finditer(raw)}
+    return {cls.__handle_match(m) for m in cls.__tag_re.finditer(raw)}
 
   def sort_key(self):
     raise NotImplementedError
@@ -109,7 +109,7 @@ class KeyValueTag(Tag):
 
 
 class Task:
-  task_re = re.compile(r"""
+  __task_re = re.compile(r"""
     ^
     ( x \s+ (?P<complete> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
     ( \( (?P<priority> [A-Z] ) \) \s+ )?
@@ -119,7 +119,7 @@ class Task:
   """, re.VERBOSE)
 
   @staticmethod
-  def parse_date(date_str):
+  def __parse_date(date_str):
     return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
 
   @classmethod
@@ -151,12 +151,12 @@ class Task:
 
   @classmethod
   def parse(cls, line):
-    m = cls.task_re.match(line)
-    assert m is not None, "task_re should match all lines: %s" % line
+    m = cls.__task_re.match(line)
+    assert m is not None, "__task_re should match all lines: %s" % line
     title = m.group("title")
     priority = m.group("priority")
-    create_date = cls.parse_date(m.group("create"))
-    complete_date = cls.parse_date(m.group("complete"))
+    create_date = cls.__parse_date(m.group("create"))
+    complete_date = cls.__parse_date(m.group("complete"))
     task = cls(title, priority, create_date, complete_date)
     assert task.line == line, "parsing should not lose information: <%s>" % line
     return task
@@ -212,10 +212,10 @@ class BatchEditContext:
     self.tasks = tasks
     self.priority = priority
     self.tags = tags
-    self.editable_tasks = self.get_editable_tasks(tasks, priority, tags)
+    self.editable_tasks = self.__get_editable_tasks(tasks, priority, tags)
 
   @staticmethod
-  def get_editable_tasks(tasks, priority, tags):
+  def __get_editable_tasks(tasks, priority, tags):
     max_id = max(tasks.keys()) if len(tasks) > 0 else 0
     max_id_len = len(str(max_id))
     editable_tasks = {}
@@ -230,7 +230,7 @@ class BatchEditContext:
         editable_tasks[id] = editable_task
     return editable_tasks
 
-  def recover_task_ids(self, edited_tasks):
+  def __recover_task_ids(self, edited_tasks):
     recovered_edited_tasks = {}
     next_id = len(self.tasks) + 1
     for task in edited_tasks.values():
@@ -253,7 +253,7 @@ class BatchEditContext:
     return recovered_edited_tasks
 
   def merge_edited_tasks(self, edited_tasks):
-    recovered_edited_tasks = self.recover_task_ids(edited_tasks)
+    recovered_edited_tasks = self.__recover_task_ids(edited_tasks)
     merged_tasks = self.tasks.copy()
 
     for id in self.editable_tasks.keys() - recovered_edited_tasks.keys():
