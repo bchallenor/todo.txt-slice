@@ -379,17 +379,17 @@ class BatchEditor:
 
 def usage():
   # TODO: detect script name
-  print("  batch.py inbox")
+  print("  slice inbox")
   print("    Opens tasks in your 'inbox' in $EDITOR.")
   print("    After editing, changes will be merged back into todo.txt.")
   print("    Currently only tasks without priorities are considered to be in your inbox.")
   print()
-  print("  batch.py edit [PRIORITY] [TAG...]")
+  print("  slice edit [PRIORITY] [TAG...]")
   print("    Opens tasks matching PRIORITY and/or TAG(s) for batch editing in $EDITOR.")
   print("    After editing, changes will be merged back into todo.txt.")
   print("    PRIORITY and TAG(s) will be automatically applied.")
   print()
-  print("  batch.py review")
+  print("  slice review")
   print("    Opens tasks that need reviewing in $EDITOR.")
   print("    After editing, changes will be merged back into todo.txt.") # TODO: elaborate
   print()
