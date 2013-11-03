@@ -258,7 +258,7 @@ class InboxTaskFilter(TaskFilter):
     pass
 
   def matches(self, task):
-    return not task.priority # todo: add more rules
+    return not task.priority or (task.start_date and task.start_date <= date.today()) # todo: add more rules
 
   def apply(self, task):
     filtered_task = task
@@ -424,7 +424,9 @@ def usage():
   print("  slice inbox")
   print("    Opens tasks in your 'inbox' in $EDITOR.")
   print("    After editing, changes will be merged back into todo.txt.")
-  print("    Currently only tasks without priorities are considered to be in your inbox.")
+  print("    Your 'inbox' includes:")
+  print("    - tasks without priorities")
+  print("    - tasks with a start date (t:<date>) in the past")
   print()
   print("  slice edit [PRIORITY] [TAG...]")
   print("    Opens tasks matching PRIORITY and/or TAG(s) for batch editing in $EDITOR.")
