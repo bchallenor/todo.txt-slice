@@ -285,19 +285,40 @@ class ReviewTaskFilter(TaskFilter):
     return age >= review_age
 
   def apply(self, task):
-    rev_tag = KeyValueTag("rev", "0")
+    cmd_tag = KeyValueTag("cmd", "_")
     filtered_task = task
-    filtered_task = filtered_task.add_tags(set([rev_tag]), prepend = True)
+    filtered_task = filtered_task.add_tags(set([cmd_tag]), prepend = True)
     filtered_task = filtered_task.set_create_date(None)
     return filtered_task
 
   def unapply(self, filtered_task, original_task):
     task = filtered_task
-    rev_tag, task = task.pop_key_value_tag("rev")
-    if not task.complete_date and rev_tag and rev_tag.value == "1":
-      create_date = date.today()
-    else:
-      create_date = original_task.create_date if original_task else default_create_date
+    create_date = original_task.create_date if original_task else default_create_date
+    priority = task.priority if not task.complete_date else None
+
+    cmd_tag, task = task.pop_key_value_tag("cmd")
+    if cmd_tag and not task.complete_date:
+      if cmd_tag.value == "_":
+        pass
+      elif cmd_tag.value == "k":
+        create_date = date.today()
+        priority = task.priority
+      elif cmd_tag.value == "i":
+        if task.priority:
+          create_date = date.today()
+          priority = chr(max(ord(task.priority) - 1, ord("A"))) #todo: take into account review periods
+        else:
+          log("task does not have a priority to increase: %s" % task)
+      elif cmd_tag.value == "d":
+        if task.priority:
+          create_date = date.today()
+          priority = chr(min(ord(task.priority) + 1, ord("Z"))) #todo: take into account review periods
+        else:
+          log("task does not have a priority to decrease: %s" % task)
+      else:
+        log("discarding unknown command: %s" % cmd_tag.value)
+
+    task = task.set_priority(priority)
     task = task.set_create_date(create_date)
     return task
 
