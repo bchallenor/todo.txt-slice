@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+from datetime import date, datetime, timedelta
 import os
 import re
-import sys
-import subprocess
 import string
+import subprocess
+import sys
 import tempfile
-from datetime import date, datetime
 
 def log(str):
   sys.stderr.write(str)
@@ -270,6 +270,38 @@ class EditTaskFilter(TaskFilter):
     return task
 
 
+class ReviewTaskFilter(TaskFilter):
+  def __init__(self, no_priority_review_age, priority_to_review_age):
+    self.no_priority_review_age = no_priority_review_age
+    self.priority_to_review_age = priority_to_review_age
+
+  def matches(self, task):
+    if task.complete_date:
+      return false
+    if not task.create_date:
+      return true
+    age = date.today() - task.create_date
+    review_age = self.priority_to_review_age[task.priority] if task.priority else self.no_priority_review_age
+    return age >= review_age
+
+  def apply(self, task):
+    rev_tag = KeyValueTag("rev", "0")
+    filtered_task = task
+    filtered_task = filtered_task.add_tags(set([rev_tag]), prepend = True)
+    filtered_task = filtered_task.set_create_date(None)
+    return filtered_task
+
+  def unapply(self, filtered_task, original_task):
+    task = filtered_task
+    rev_tag, task = task.pop_key_value_tag("rev")
+    if not task.complete_date and rev_tag and rev_tag.value == "1":
+      create_date = date.today()
+    else:
+      create_date = original_task.create_date if original_task else default_create_date
+    task = task.set_create_date(create_date)
+    return task
+
+
 class BatchEditor:
   def __init__(self, tasks, task_filter):
     self.tasks = tasks
@@ -357,6 +389,10 @@ def usage():
   print("    After editing, changes will be merged back into todo.txt.")
   print("    PRIORITY and TAG(s) will be automatically applied.")
   print()
+  print("  batch.py review")
+  print("    Opens tasks that need reviewing in $EDITOR.")
+  print("    After editing, changes will be merged back into todo.txt.") # TODO: elaborate
+  print()
 
 
 def build_inbox_filter(args):
@@ -384,10 +420,23 @@ def build_edit_filter(args):
   return EditTaskFilter(priority, tags)
 
 
+def build_review_filter(args):
+  # todo: build from env
+  no_priority_review_age = timedelta(days = 1)
+  priority_to_review_age = {
+      "A": timedelta(days = 1),
+      "B": timedelta(days = 7),
+      "C": timedelta(days = 28),
+      "Z": timedelta(days = 180)
+  }
+  return ReviewTaskFilter(no_priority_review_age, priority_to_review_age)
+
+
 def build_filter(name, args):
   filters = {
     "inbox": build_inbox_filter,
-    "edit": build_edit_filter
+    "edit": build_edit_filter,
+    "review": build_review_filter
   }
 
   if name not in filters:
