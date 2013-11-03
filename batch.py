@@ -219,6 +219,24 @@ class TaskFilter:
     raise NotImplementedError
 
 
+class InboxTaskFilter(TaskFilter):
+  def __init__(self):
+    pass
+
+  def matches(self, task):
+    return not task.complete_date and (not task.priority) # todo: add more rules
+
+  def apply(self, task):
+    filtered_task = task
+    filtered_task = filtered_task.set_create_date(None)
+    return filtered_task
+
+  def unapply(self, filtered_task, original_task):
+    task = filtered_task
+    task = task.set_create_date(original_task.create_date if original_task else default_create_date)
+    return task
+
+
 class EditTaskFilter(TaskFilter):
   def __init__(self, priority = None, tags = set()):
     self.priority = priority
@@ -323,18 +341,23 @@ class BatchEditor:
 
 def usage():
   # TODO: detect script name
-  print("  batch.py [PRIORITY] [TAG...]")
+  print("  batch.py inbox")
+  print("    Opens tasks in your 'inbox' in $EDITOR.")
+  print("    After editing, changes will be merged back into todo.txt.")
+  print("    Currently only tasks without priorities are considered to be in your inbox.")
+  print()
+  print("  batch.py edit [PRIORITY] [TAG...]")
   print("    Opens tasks matching PRIORITY and/or TAG(s) for batch editing in $EDITOR.")
   print("    After editing, changes will be merged back into todo.txt.")
   print("    PRIORITY and TAG(s) will be automatically applied.")
   print()
 
 
-def main(action, args):
-  if action == "usage":
-    usage()
-    sys.exit(0)
+def build_inbox_filter(args):
+  return InboxTaskFilter()
 
+
+def build_edit_filter(args):
   priority = None
   tags = set()
 
@@ -352,16 +375,50 @@ def main(action, args):
       sys.exit(1)
     tags.add(tag)
 
+  return EditTaskFilter(priority, tags)
+
+
+def build_filter(name, args):
+  filters = {
+    "inbox": build_inbox_filter,
+    "edit": build_edit_filter
+  }
+
+  if name not in filters:
+    usage()
+    sys.exit(1)
+
+  return filters[name](args)
+
+
+def main(args):
+  if len(args) < 2:
+    usage()
+    sys.exit(1)
+
+  action_name = args[1]
+  action_args = args[2:]
+
+  if action_name == "usage":
+    usage()
+    sys.exit(0)
+
+  if len(action_args) < 1:
+    usage()
+    sys.exit(1)
+
+  filter_name = action_args[0]
+  filter_args = action_args[1:]
+
   tasks = Task.load_all(todo_file_path)
 
-  task_filter = EditTaskFilter(priority, tags)
+  task_filter = build_filter(filter_name, filter_args)
   editor = BatchEditor(tasks, task_filter)
   merged_tasks = editor.edit_and_merge()
+
   Task.save_all(merged_tasks, todo_file_path)
 
 
 if __name__ == "__main__":
-  action = sys.argv[1]
-  args = sys.argv[2:]
-  main(action, args)
+  main(sys.argv)
 
