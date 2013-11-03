@@ -16,6 +16,7 @@ editor_path = os.environ["EDITOR"]
 
 todo_file_path = os.environ["TODO_FILE"]
 date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
+default_create_date = date.today() if date_on_add else None
 preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
 
 
@@ -207,26 +208,56 @@ class Task:
     return Task(self.title, self.priority, create_date, self.complete_date)
 
 
-class BatchEditor:
-  def __init__(self, tasks, priority = None, tags = set()):
-    self.tasks = tasks
+class TaskFilter:
+  def matches(task):
+    raise NotImplementedError
+
+  def apply(task):
+    raise NotImplementedError
+
+  def unapply(filtered_task):
+    raise NotImplementedError
+
+
+class EditTaskFilter(TaskFilter):
+  def __init__(self, priority = None, tags = set()):
     self.priority = priority
     self.tags = tags
-    self.editable_tasks = self.__get_editable_tasks(tasks, priority, tags)
+
+  def matches(self, task):
+    return (not self.priority or task.priority == self.priority) and task.tags >= self.tags
+
+  def apply(self, task):
+    filtered_task = task
+    filtered_task = filtered_task.remove_tags(self.tags)
+    filtered_task = filtered_task.set_priority(None if self.priority else task.priority)
+    filtered_task = filtered_task.set_create_date(None)
+    return filtered_task
+
+  def unapply(self, filtered_task, original_task):
+    task = filtered_task
+    task = task.set_create_date(original_task.create_date if original_task else default_create_date)
+    task = task.set_priority((task.priority or self.priority) if not task.complete_date else None)
+    task = task.add_tags(self.tags)
+    return task
+
+
+class BatchEditor:
+  def __init__(self, tasks, task_filter):
+    self.tasks = tasks
+    self.task_filter = task_filter
+    self.editable_tasks = self.__get_editable_tasks(tasks, task_filter)
     self.sorted_editable_tasks = Task.sorted(self.editable_tasks)
 
   @staticmethod
-  def __get_editable_tasks(tasks, priority, tags):
+  def __get_editable_tasks(tasks, task_filter):
     max_id = max(tasks.keys()) if len(tasks) > 0 else 0
     max_id_len = len(str(max_id))
     editable_tasks = {}
     for id, task in tasks.items():
-      if task.tags >= tags and (not priority or task.priority == priority):
+      if task_filter.matches(task):
         id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
-        editable_task = task
-        editable_task = editable_task.remove_tags(tags)
-        editable_task = editable_task.set_priority(None if priority else task.priority)
-        editable_task = editable_task.set_create_date(None)
+        editable_task = task_filter.apply(task)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
         editable_tasks[id] = editable_task
     return editable_tasks
@@ -262,13 +293,10 @@ class BatchEditor:
       log("- %d %s" % (id, existing_task))
       del merged_tasks[id]
 
-    default_create_date = date.today() if date_on_add else None
-    for id, task in recovered_edited_tasks.items():
+    for id, edited_task in recovered_edited_tasks.items():
       existing_task = merged_tasks[id] if id in merged_tasks else None
 
-      task = task.set_create_date(existing_task.create_date if existing_task else default_create_date)
-      task = task.set_priority((task.priority or self.priority) if not task.complete_date else None)
-      task = task.add_tags(self.tags)
+      task = self.task_filter.unapply(edited_task, existing_task)
 
       if existing_task != task:
         if existing_task:
@@ -326,7 +354,8 @@ def main(action, args):
 
   tasks = Task.load_all(todo_file_path)
 
-  editor = BatchEditor(tasks, priority, tags)
+  task_filter = EditTaskFilter(priority, tags)
+  editor = BatchEditor(tasks, task_filter)
   merged_tasks = editor.edit_and_merge()
   Task.save_all(merged_tasks, todo_file_path)
 
