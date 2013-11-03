@@ -120,7 +120,7 @@ class Task:
   """, re.VERBOSE)
 
   @staticmethod
-  def __parse_date(date_str):
+  def parse_date(date_str):
     return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
 
   @classmethod
@@ -156,8 +156,8 @@ class Task:
     assert m is not None, "__task_re should match all lines: %s" % line
     title = m.group("title")
     priority = m.group("priority")
-    create_date = cls.__parse_date(m.group("create"))
-    complete_date = cls.__parse_date(m.group("complete"))
+    create_date = cls.parse_date(m.group("create"))
+    complete_date = cls.parse_date(m.group("complete"))
     task = cls(title, priority, create_date, complete_date)
     assert task.line == line, "parsing should not lose information: <%s>" % line
     return task
