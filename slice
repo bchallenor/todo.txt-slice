@@ -120,8 +120,13 @@ class Task:
   """, re.VERBOSE)
 
   @staticmethod
-  def parse_date(date_str):
-    return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
+  def __parse_date(date_str):
+    if date_str is None:
+      return None
+    try:
+      return datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+      return None
 
   @classmethod
   def load_all(cls, path):
@@ -156,8 +161,8 @@ class Task:
     assert m is not None, "__task_re should match all lines: %s" % line
     title = m.group("title")
     priority = m.group("priority")
-    create_date = cls.parse_date(m.group("create"))
-    complete_date = cls.parse_date(m.group("complete"))
+    create_date = cls.__parse_date(m.group("create"))
+    complete_date = cls.__parse_date(m.group("complete"))
     task = cls(title, priority, create_date, complete_date)
     assert task.line == line, "parsing should not lose information: <%s>" % line
     return task
@@ -173,7 +178,10 @@ class Task:
       "%s " % create_date.isoformat() if create_date else "",
       title
     ])
+    # the rest is derived data
     self.tags = Tag.find_all(title)
+    self.start_date = self.get_key_value_date("t")
+    self.due_date = self.get_key_value_date("due")
 
   def __repr__(self):
     return self.line
@@ -186,6 +194,9 @@ class Task:
 
   def __hash__(self):
     return self.line.__hash__()
+
+  def is_hidden(self):
+    return self.complete_date or (self.start_date and self.start_date > date.today())
 
   def remove_tags(self, tags):
     title = self.title
@@ -200,6 +211,19 @@ class Task:
     for tag in sorted(tags - self.tags, key = lambda tag: tag.sort_key()):
       title = tag.raw + " " + title if prepend else title + " " + tag.raw
     return Task(title, self.priority, self.create_date, self.complete_date)
+
+  def get_key_value_date(self, key):
+    tag = self.get_key_value_tag(key)
+    return self.__parse_date(tag.value) if tag else None
+
+  def get_key_value_tag(self, key):
+    tags = { tag for tag in self.tags if isinstance(tag, KeyValueTag) and tag.key == key }
+    if len(tags) == 0:
+      return None
+    tag = tags.pop()
+    if len(tags) > 0:
+      log("ignoring duplicate tags: %s" % tags) # TODO: test
+    return tag
 
   def pop_key_value_tag(self, key):
     tags = { tag for tag in self.tags if isinstance(tag, KeyValueTag) and tag.key == key }
@@ -234,7 +258,7 @@ class InboxTaskFilter(TaskFilter):
     pass
 
   def matches(self, task):
-    return not task.complete_date and (not task.priority) # todo: add more rules
+    return not task.priority # todo: add more rules
 
   def apply(self, task):
     filtered_task = task
@@ -276,8 +300,6 @@ class ReviewTaskFilter(TaskFilter):
     self.priority_to_review_age = priority_to_review_age
 
   def matches(self, task):
-    if task.complete_date:
-      return false
     if not task.create_date:
       return true
     age = date.today() - task.create_date
@@ -296,7 +318,7 @@ class ReviewTaskFilter(TaskFilter):
     priority = task.priority if not task.complete_date else None
 
     act_tag, task = task.pop_key_value_tag("act")
-    if act_tag and not task.complete_date:
+    if act_tag and not task.is_hidden():
       if act_tag.value == "_":
         pass
       elif act_tag.value == "k":
@@ -335,7 +357,7 @@ class BatchEditor:
     max_id_len = len(str(max_id))
     editable_tasks = {}
     for id, task in tasks.items():
-      if task_filter.matches(task):
+      if not task.is_hidden() and task_filter.matches(task):
         id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
         editable_task = task_filter.apply(task)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
