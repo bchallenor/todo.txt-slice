@@ -325,16 +325,26 @@ class EditTaskFilter(TaskFilter):
 
 
 class ReviewTaskFilter(TaskFilter):
-  def __init__(self, no_priority_review_age, priority_to_review_age):
-    self.no_priority_review_age = no_priority_review_age
-    self.priority_to_review_age = priority_to_review_age
+  # unprioritized tasks must be performed on the day they are defined, or they will show up in the next review
+  __no_priority_interval = timedelta(days = 1)
+  # unconfigured priorities will never escape the review
+  __unconfigured_priority_interval = timedelta(days = 0)
+
+  def __init__(self, priority_to_interval):
+    self.priority_to_interval = priority_to_interval
 
   def matches(self, task):
     if not task.create_date:
       return True
+
     age = date.today() - task.create_date
-    review_age = self.priority_to_review_age[task.priority] if task.priority else self.no_priority_review_age
-    return age >= review_age
+
+    if task.priority:
+      interval = self.priority_to_interval[task.priority] if task.priority in self.priority_to_interval else self.__unconfigured_priority_interval
+    else:
+      interval = self.__no_priority_interval
+
+    return age >= interval
 
   def apply(self, task):
     act_tag = KeyValueTag("act", "_")
@@ -499,15 +509,43 @@ def build_edit_filter(args, env):
 
 
 def build_review_filter(args, env):
-  # todo: build from env
-  no_priority_review_age = timedelta(days = 1)
-  priority_to_review_age = {
-      "A": timedelta(days = 1),
-      "B": timedelta(days = 7),
-      "C": timedelta(days = 56),
-      "Z": timedelta(days = 182)
-  }
-  return ReviewTaskFilter(no_priority_review_age, priority_to_review_age)
+  key = "TODOTXT_SLICE_REVIEW_INTERVALS"
+  if key not in env:
+    log("Environment variable %s is not defined" % key)
+    log()
+    usage()
+    sys.exit(1)
+
+  value = env[key]
+  priority_to_interval = {}
+
+  for priority_interval_str in value.split(","):
+    pair = priority_interval_str.split(":")
+    if len(pair) != 2:
+      log("Error parsing %s='%s': expected <priority>:<interval> pairs separated by commas" % (key, value))
+      log()
+      usage()
+      sys.exit(1)
+
+    [priority, interval_str] = pair
+
+    if priority not in string.ascii_uppercase:
+      log("Error parsing %s='%s': %s is not a priority" % (key, value, priority))
+      log()
+      usage()
+      sys.exit(1)
+
+    try:
+      interval = int(interval_str)
+    except ValueError:
+      log("Error parsing %s='%s': %s is not an integer" % (key, value, interval_str))
+      log()
+      usage()
+      sys.exit(1)
+
+    priority_to_interval[priority] = timedelta(days = interval)
+
+  return ReviewTaskFilter(priority_to_interval)
 
 
 def build_filter(name, args, env):
