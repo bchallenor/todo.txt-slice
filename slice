@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 
-def log(str):
+def log(str=""):
   sys.stderr.write(str)
   sys.stderr.write("\n")
 
