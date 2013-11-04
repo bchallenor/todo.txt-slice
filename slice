@@ -473,11 +473,11 @@ def usage():
   print()
 
 
-def build_inbox_filter(args):
+def build_inbox_filter(args, env):
   return InboxTaskFilter()
 
 
-def build_edit_filter(args):
+def build_edit_filter(args, env):
   priority = None
   tags = set()
 
@@ -498,7 +498,7 @@ def build_edit_filter(args):
   return EditTaskFilter(priority, tags)
 
 
-def build_review_filter(args):
+def build_review_filter(args, env):
   # todo: build from env
   no_priority_review_age = timedelta(days = 1)
   priority_to_review_age = {
@@ -510,7 +510,7 @@ def build_review_filter(args):
   return ReviewTaskFilter(no_priority_review_age, priority_to_review_age)
 
 
-def build_filter(name, args):
+def build_filter(name, args, env):
   filters = {
     "inbox": build_inbox_filter,
     "edit": build_edit_filter,
@@ -521,10 +521,10 @@ def build_filter(name, args):
     usage()
     sys.exit(1)
 
-  return filters[name](args)
+  return filters[name](args, env)
 
 
-def main(args):
+def main(args, env):
   if len(args) < 2:
     usage()
     sys.exit(1)
@@ -545,7 +545,7 @@ def main(args):
 
   tasks = Task.load_all(todo_file_path)
 
-  task_filter = build_filter(filter_name, filter_args)
+  task_filter = build_filter(filter_name, filter_args, env)
   editor = BatchEditor(tasks, task_filter)
   merged_tasks = editor.edit_and_merge()
 
@@ -553,5 +553,5 @@ def main(args):
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+  main(sys.argv, os.environ)
 
