@@ -302,7 +302,7 @@ class InboxTaskFilter(TaskFilter):
     return task
 
 
-class EditTaskFilter(TaskFilter):
+class MatchTaskFilter(TaskFilter):
   def __init__(self, priority = None, tags = set()):
     self.priority = priority
     self.tags = tags
@@ -481,7 +481,7 @@ def usage():
   print("      - tasks without priorities")
   print("      - tasks with a start date (t:<date>) that has expired (today or in the past)")
   print()
-  print("    edit [PRIORITY] [TAG...]")
+  print("    match [PRIORITY] [TAG...]")
   print("      Opens tasks matching PRIORITY and/or TAG(s).")
   print("      PRIORITY and TAG(s) will be automatically applied to all edited tasks.")
   print()
@@ -512,7 +512,7 @@ def build_inbox_filter(args, env):
   return InboxTaskFilter()
 
 
-def build_edit_filter(args, env):
+def build_match_filter(args, env):
   priority = None
   tags = set()
 
@@ -530,7 +530,7 @@ def build_edit_filter(args, env):
       sys.exit(1)
     tags.add(tag)
 
-  return EditTaskFilter(priority, tags)
+  return MatchTaskFilter(priority, tags)
 
 
 def build_review_filter(args, env):
@@ -576,7 +576,7 @@ def build_review_filter(args, env):
 def build_filter(name, args, env):
   filters = {
     "inbox": build_inbox_filter,
-    "edit": build_edit_filter,
+    "match": build_match_filter,
     "review": build_review_filter
   }
 
