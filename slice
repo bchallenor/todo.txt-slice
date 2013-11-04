@@ -19,6 +19,7 @@ todo_file_path = os.environ["TODO_FILE"]
 date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
 default_create_date = date.today() if date_on_add else None
 preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
+disable_filter = os.environ["TODOTXT_DISABLE_FILTER"] == "1"
 
 
 class ColorDiff:
@@ -397,7 +398,7 @@ class BatchEditor:
   def __get_editable_tasks(tasks, task_filter, max_id_len):
     editable_tasks = {}
     for id, task in tasks.items():
-      if not task.is_hidden() and task_filter.matches(task):
+      if (not task.is_hidden() or disable_filter) and task_filter.matches(task):
         id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
         editable_task = task_filter.apply(task)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
