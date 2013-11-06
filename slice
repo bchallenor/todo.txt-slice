@@ -399,7 +399,7 @@ class BatchEditor:
     editable_tasks = {}
     for id, task in tasks.items():
       if (not task.is_hidden() or disable_filter) and task_filter.matches(task):
-        id_tag = KeyValueTag("id", str(id).zfill(max_id_len))
+        id_tag = KeyValueTag("i", str(id).zfill(max_id_len))
         editable_task = task_filter.apply(task)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
         editable_tasks[id] = editable_task
@@ -410,7 +410,7 @@ class BatchEditor:
     next_id = len(self.tasks) + 1
     for task in edited_tasks.values():
       id = None
-      id_tag, task = task.pop_key_value_tag("id")
+      id_tag, task = task.pop_key_value_tag("i")
       if id_tag:
         tmpid = int(id_tag.value)
         if tmpid in self.editable_tasks: # safety check
