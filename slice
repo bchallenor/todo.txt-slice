@@ -259,10 +259,29 @@ class Task:
       title = title.replace(   tag.raw   , "")
     return Task(title, self.priority, self.create_date, self.complete_date)
 
+  # canonicalizes the order of tags at the edge of the title so that different slices make idempotent edits
   def add_tags(self, tags, prepend = False):
-    title = self.title
-    for tag in sorted(tags - self.tags, key = lambda tag: tag.sort_key()):
-      title = tag.raw + " " + title if prepend else title + " " + tag.raw
+    # the "edge" is the start if prepend is true, else the end
+    # split tokens into "tags at the edge", and whatever remains
+    edge_tags = set()
+    edge_pos = 0 if prepend else -1
+    rem_tokens = self.tokens[:]
+    while len(rem_tokens) > 0:
+      token = rem_tokens[edge_pos]
+      if isinstance(token, Tag):
+        edge_tags.add(token)
+      else:
+        assert isinstance(token, str) and len(token) > 0, "Expected non-Tag token to be a non-empty string: %s" % token
+        if not token.isspace():
+          # no longer at edge
+          break
+      rem_tokens.pop(edge_pos)
+
+    # join the remaining tokens, then _sort_ and add edge tokens
+    title = "".join([str(token) for token in rem_tokens]).strip()
+    edge = " ".join([str(tag) for tag in sorted(edge_tags | (tags - self.tags), key = lambda tag: tag.sort_key())])
+    if len(edge) > 0:
+      title = edge + " " + title if prepend else title + " " + edge
     return Task(title, self.priority, self.create_date, self.complete_date)
 
   def get_key_value_date(self, key):
