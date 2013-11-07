@@ -89,9 +89,25 @@ class Tag:
     else:
       return None
 
+  # returns a list of Tags and non-empty strings
   @classmethod
-  def find_all(cls, raw):
-    return {cls.__handle_match(m) for m in cls.__tag_re.finditer(raw)}
+  def tokenize(cls, raw):
+    tokens = []
+    pos = 0
+
+    def handle_str(end):
+      str_token = raw[pos:end]
+      if len(str_token) > 0:
+        tokens.append(str_token)
+
+    for m in cls.__tag_re.finditer(raw):
+      handle_str(m.start())
+      tokens.append(cls.__handle_match(m))
+      pos = m.end()
+
+    handle_str(len(raw))
+
+    return tokens
 
   def sort_key(self):
     raise NotImplementedError
@@ -210,7 +226,8 @@ class Task:
       title
     ])
     # the rest is derived data
-    self.tags = Tag.find_all(title)
+    self.tokens = Tag.tokenize(title)
+    self.tags = { token for token in self.tokens if isinstance(token, Tag) }
     self.start_date = self.get_key_value_date("t")
     self.due_date = self.get_key_value_date("due")
 
