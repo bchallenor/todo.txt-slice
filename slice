@@ -81,7 +81,7 @@ class Tag:
     else:
       assert key and value, "key and value should be captured if prefix is not: %s" % raw
       tag = KeyValueTag(key, value)
-    assert tag.raw == raw, "parsing should not lose information: <%s>" % raw
+    assert tag.raw == raw, "parsing should not lose information: <%> != <%s>" % (tag.raw, raw)
     return tag
 
   @classmethod
@@ -214,7 +214,9 @@ class Task:
     create_date = cls.__parse_date(m.group("create"))
     complete_date = cls.__parse_date(m.group("complete"))
     task = cls(title, priority, create_date, complete_date)
-    assert task.line == line, "parsing should not lose information: <%s>" % line
+    def remove_whitespace(s):
+      "".join(s.split())
+    assert remove_whitespace(task.line) == remove_whitespace(line), "parsing should not lose information other than whitespace: <%s> != <%s>" % (task.line, line)
     return task
 
   def __init__(self, title, priority, create_date = date.today(), complete_date = None):
