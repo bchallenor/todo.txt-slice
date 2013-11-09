@@ -672,7 +672,8 @@ def main(env, args):
   editor = BatchEditor(env, tasks, task_filter)
   merged_tasks = editor.edit_and_merge()
 
-  Task.save_all(env, merged_tasks, env.todo_file_path)
+  if merged_tasks != tasks:
+    Task.save_all(env, merged_tasks, env.todo_file_path)
 
 
 if __name__ == "__main__":

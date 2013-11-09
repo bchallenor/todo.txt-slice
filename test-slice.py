@@ -27,8 +27,10 @@ class VirtualTodoEnv(unittest.TestCase):
   todo_file_path = os.path.join(todo_dir_path, todo_file_name)
   today = date(2000, 1, 1)
 
-  def __init__(self, todo0, edit0, edit1, todo1, date_on_add, preserve_line_numbers, disable_filter):
+  def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, date_on_add, preserve_line_numbers, disable_filter):
     unittest.TestCase.__init__(self)
+
+    self.expect_clean_exit = expect_clean_exit
 
     self.__todo0 = todo0
     self.__edit0 = edit0
@@ -69,9 +71,18 @@ class VirtualTodoEnv(unittest.TestCase):
     self.assertEqual(self.__edit_file_path, path)
 
   def assert_success(self):
-    self.assertTrue(self.__edit_dir.clean_exit, msg = "Expected edit directory to be used and cleaned up")
-    self.assertTrue(self.__edit_file_path_written, msg = "Expected edit file to be written")
-    self.assertTrue(self.__todo_file_path_written, msg = "Expected todo file to be written")
+    if self.expect_clean_exit:
+      self.assertTrue(self.__edit_dir.clean_exit, msg = "Expected edit directory to be used and cleaned up")
+      self.assertTrue(self.__edit_file_path_written, msg = "Expected edit file to be written")
+      changes = self.__todo0 != self.__todo1
+      if changes:
+        self.assertTrue(self.__todo_file_path_written, msg = "Expected todo file to be written")
+      else:
+        self.assertFalse(self.__todo_file_path_written, msg = "Expected todo file to be untouched as there were no changes")
+    else:
+      self.assertFalse(self.__edit_dir.clean_exit, msg = "Expected edit directory to be untouched")
+      self.assertFalse(self.__edit_file_path_written, msg = "Expected edit file to be untouched")
+      self.assertFalse(self.__todo_file_path_written, msg = "Expected todo file to be untouched")
 
 
 class SliceTest(unittest.TestCase):
@@ -80,7 +91,7 @@ class SliceTest(unittest.TestCase):
   def run_test(
       self,
       filter_args = [],
-      expect_early_exit = False,
+      expect_clean_exit = True,
       todo0 = None,
       edit0 = None,
       edit1 = None,
@@ -100,6 +111,7 @@ class SliceTest(unittest.TestCase):
         args.extend(filter_args)
 
     env = VirtualTodoEnv(
+        expect_clean_exit = expect_clean_exit,
         todo0 = todo0,
         edit0 = edit0,
         edit1 = edit1 if edit1 is not None else edit0,
@@ -111,8 +123,7 @@ class SliceTest(unittest.TestCase):
 
     slice.main(env, args)
 
-    if not expect_early_exit:
-      env.assert_success()
+    env.assert_success()
 
 
 class SliceBasicTest(SliceTest):
@@ -195,12 +206,21 @@ class SliceBasicTest(SliceTest):
         todo1 = ["", "orig"]
         )
 
-  def test_empty_line_not_preserved(self):
+  def test_empty_line_unchanged_if_no_other_edits(self):
     self.run_test(
         todo0 = ["", "orig"],
         edit0 = ["i:2 orig"],
         edit1 = ["i:2 orig"],
-        todo1 = ["orig"],
+        todo1 = ["", "orig"],
+        preserve_line_numbers = False
+        )
+
+  def test_empty_line_not_preserved_when_other_edits(self):
+    self.run_test(
+        todo0 = ["", "orig"],
+        edit0 = ["i:2 orig"],
+        edit1 = ["i:2 changed"],
+        todo1 = ["changed"],
         preserve_line_numbers = False
         )
 
