@@ -460,8 +460,8 @@ class ReviewTaskFilter(TaskFilter):
       task = task.set_priority(task.priority if task.priority.level else original_task.priority)
     else:
       # failed review; restore create_date and priority
-      task = task.set_create_date(original_task.create_date)
-      task = task.set_priority(original_task.priority)
+      task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
+      task = task.set_priority(original_task.priority if original_task else Priority(None))
 
     return task
 

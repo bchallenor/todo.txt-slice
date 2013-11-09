@@ -467,6 +467,25 @@ class SliceReviewTest(SliceTest):
         todo1 = ["(A) 1999-12-31 b"],
         )
 
+  # regression test
+  def test_insert_task(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x"],
+        todo1 = ["x"],
+        )
+
+  # regression test
+  def test_insert_task_with_date(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x"],
+        todo1 = ["2000-01-01 x"],
+        date_on_add = True
+        )
+
 
 if __name__ == "__main__":
   unittest.main()
