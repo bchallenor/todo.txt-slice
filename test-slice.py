@@ -400,14 +400,14 @@ class SliceMatchTest(SliceAllTest):
 class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
   filter_name = "review"
 
-  def test_reviewable_age(self):
+  def test_reviewable_by_age(self):
     self.run_test(
         slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["(_) i:1 a"]
         )
 
-  def test_not_reviewable_age(self):
+  def test_not_reviewable_by_age(self):
     self.run_test(
         slice_review_intervals = "A:2",
         todo0 = ["(A) 1999-12-31 a"],
@@ -428,7 +428,7 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         edit0 = ["(_) i:1 a"]
         )
 
-  def test_unconfigured_priorities_reviewable_same_day(self):
+  def test_reviewable_by_unconfigured_priority(self):
     self.run_test(
         slice_review_intervals = "A:1",
         todo0 = ["(A) 2000-01-01 a", "(B) 2000-01-01 b"],
@@ -444,7 +444,7 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         todo1 = ["x 2000-01-01 1999-12-31 a"],
         )
 
-  def test_set_future_date_and_not_complete_date_resets_create_date(self):
+  def test_set_start_date_and_not_complete_date_resets_create_date(self):
     self.run_test(
         slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
