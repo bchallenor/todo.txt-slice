@@ -440,6 +440,15 @@ class SliceReviewTest(SliceTest):
         todo1 = ["x 2000-01-01 1999-12-31 a"],
         )
 
+  def test_set_future_date_and_not_complete_date_resets_create_date(self):
+    self.run_test(
+        slice_review_intervals = "A:1",
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["(_) i:1 a"],
+        edit1 = ["(_) i:1 a t:2001-01-02"],
+        todo1 = ["(A) 2000-01-01 a t:2001-01-02"],
+        )
+
   def test_set_priority_and_not_complete_date_resets_create_date(self):
     self.run_test(
         slice_review_intervals = "A:1",
