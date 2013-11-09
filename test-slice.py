@@ -506,6 +506,55 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         )
 
 
+class SliceFutureTest(AbstractSliceTest, unittest.TestCase):
+  slice_name = "future"
+
+  def test_future_start_date(self):
+    self.run_test(
+        todo0 = ["future t:2000-01-02"],
+        edit0 = ["i:1 future t:2000-01-02"]
+        )
+
+  def test_past_or_present_start_dates_hidden(self):
+    self.run_test(
+        todo0 = ["past t:1999-12-31", "present t:2000-01-01"],
+        edit0 = []
+        )
+
+  def test_normal_hidden(self):
+    self.run_test(
+        todo0 = ["normal"],
+        edit0 = []
+        )
+
+  def test_completed_hidden(self):
+    self.run_test(
+        todo0 = ["x 2000-01-01 completed"],
+        edit0 = []
+        )
+
+  # regression test
+  def test_completed_future_start_date_hidden(self):
+    self.run_test(
+        todo0 = ["x 2000-01-01 completed t:2000-01-02"],
+        edit0 = []
+        )
+
+  # regression test
+  def test_completed_future_start_date_not_hidden(self):
+    self.run_test(
+        todo0 = ["x 2000-01-01 completed t:2000-01-02"],
+        edit0 = ["x 2000-01-01 i:1 completed t:2000-01-02"],
+        disable_filter = True
+        )
+
+  def test_sorted_by_start_date(self):
+    self.run_test(
+        todo0 = ["(A) a t:2000-01-04", "(C) c t:2000-01-03", "(B) b t:2000-01-02"],
+        edit0 = ["(B) i:3 b t:2000-01-02", "(C) i:2 c t:2000-01-03", "(A) i:1 a t:2000-01-04"]
+        )
+
+
 if __name__ == "__main__":
   unittest.main()
 

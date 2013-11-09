@@ -385,6 +385,9 @@ class TaskSlice:
   def __init__(self, env):
     self.env = env
 
+  def hidden(self, task):
+    return task.is_hidden(self.env.today) and not self.env.disable_filter
+
   def matches(self, task):
     raise NotImplementedError
 
@@ -396,6 +399,30 @@ class TaskSlice:
 
   def unapply(self, sliced_task, original_task):
     raise NotImplementedError
+
+
+class FutureTaskSlice(TaskSlice):
+  def __init__(self, env):
+    TaskSlice.__init__(self, env)
+
+  def hidden(self, task):
+    return task.complete_date and not self.env.disable_filter
+
+  def matches(self, task):
+    return task.start_date and task.start_date > self.env.today
+
+  def sort_key(self, task):
+    return task.start_date
+
+  def apply(self, task):
+    sliced_task = task
+    sliced_task = sliced_task.set_create_date(None)
+    return sliced_task
+
+  def unapply(self, sliced_task, original_task):
+    task = sliced_task
+    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
+    return task
 
 
 class MatchTaskSlice(TaskSlice):
@@ -475,7 +502,7 @@ class SliceEditor:
   def __get_editable_tasks(self, tasks, task_slice, max_id_len):
     editable_tasks = {}
     for id, task in tasks.items():
-      if (not task.is_hidden(self.env.today) or self.env.disable_filter) and task_slice.matches(task):
+      if not task_slice.hidden(task) and task_slice.matches(task):
         id_tag = KeyValueTag("i", str(id).zfill(max_id_len))
         editable_task = task_slice.apply(task)
         editable_task = editable_task.add_tags({id_tag}, prepend = True)
@@ -604,6 +631,10 @@ def build_all_slice(env, args):
   return MatchTaskSlice(env)
 
 
+def build_future_slice(env, args):
+  return FutureTaskSlice(env)
+
+
 def build_match_slice(env, args):
   priority = None
   tags = set()
@@ -671,6 +702,7 @@ def build_review_slice(env, args):
 def build_slice(env, name, args):
   slices = {
     "all": build_all_slice,
+    "future": build_future_slice,
     "match": build_match_slice,
     "review": build_review_slice
   }
