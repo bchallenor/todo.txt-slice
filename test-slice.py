@@ -120,41 +120,22 @@ class SliceMatchTest(SliceTest):
 
   def test_single_task(self):
     self.run_test(
-        todo_pre = [
-          "task"
-          ],
-        slice_pre = [
-          "i:1 task"
-          ]
+        todo_pre = ["task"],
+        slice_pre = ["i:1 task"]
         )
 
   def test_completed_tasks_are_hidden(self):
     self.run_test(
-        todo_pre = [
-          "x 2000-01-01 done"
-          ],
-        slice_pre = [
-          ]
+        todo_pre = ["x 2000-01-01 done"],
+        slice_pre = []
         )
 
   def test_empty_line_is_preserved(self):
     self.run_test(
-        todo_pre = [
-          "",
-          "orig"
-          ],
-        slice_pre = [
-          "i:2 orig",
-          ],
-        slice_post = [
-          "i:2 orig",
-          "new"
-          ],
-        todo_post = [
-          "",
-          "orig",
-          "new"
-          ],
+        todo_pre = ["", "orig"],
+        slice_pre = ["i:2 orig"],
+        slice_post = ["i:2 orig", "new"],
+        todo_post = ["", "orig", "new"],
         preserve_line_numbers = True
         )
 
