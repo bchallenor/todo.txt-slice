@@ -89,7 +89,7 @@ class Priority:
     assert priority.raw == raw, "parsing should not lose information: <%s> != <%s>" % (priority.raw, raw)
     return priority
 
-  def __init__(self, level = None, explicit_no_level = False):
+  def __init__(self, level, explicit_no_level = False):
     if level is not None and level not in string.ascii_uppercase:
       raise ValueError("Invalid level: %s" % level)
     self.level = level
@@ -271,7 +271,7 @@ class Task:
     m = cls.__task_re.match(line)
     assert m is not None, "__task_re should match all lines: %s" % line
     title = m.group("title")
-    priority = Priority.parse(m.group("priority")) if m.group("priority") else Priority()
+    priority = Priority.parse(m.group("priority")) if m.group("priority") else Priority(None)
     create_date = cls.__parse_date(m.group("create"))
     complete_date = cls.__parse_date(m.group("complete"))
     task = cls(title, priority, create_date, complete_date)
@@ -419,7 +419,7 @@ class MatchTaskFilter(TaskFilter):
   def apply(self, task):
     filtered_task = task
     filtered_task = filtered_task.remove_tags(self.tags)
-    filtered_task = filtered_task.set_priority(Priority() if self.priority else task.priority)
+    filtered_task = filtered_task.set_priority(Priority(None) if self.priority else task.priority)
     filtered_task = filtered_task.set_create_date(None)
     return filtered_task
 
@@ -521,7 +521,7 @@ class BatchEditor:
 
       task = self.task_filter.unapply(edited_task, existing_task)
 
-      priority = task.priority if not task.complete_date else Priority()
+      priority = task.priority if not task.complete_date else Priority(None)
       task = task.set_priority(priority.normalize(explicit_no_level = False))
 
       task = task
@@ -649,7 +649,7 @@ def build_review_filter(env, args):
     priority_to_interval[priority] = timedelta(days = interval)
 
   # unprioritized tasks must be performed on the day they are defined, or they will show up in the next review
-  priority_to_interval[Priority()] = timedelta(days = 1)
+  priority_to_interval[Priority(None)] = timedelta(days = 1)
 
   # unconfigured priorities will never escape the review
   for priority_level in string.ascii_uppercase:
