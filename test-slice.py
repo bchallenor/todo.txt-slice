@@ -237,6 +237,14 @@ class SliceBasicTest(SliceTest):
         edit0 = ["i:1 http://example.com @c"]
         )
 
+  def test_unknown_id_tag_ignored(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["i:42 x"],
+        todo1 = ["x"]
+        )
+
 
 class SliceMatchTest(SliceTest):
   filter_name = "match"
@@ -274,6 +282,15 @@ class SliceMatchTest(SliceTest):
         filter_args = ["A"],
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["i:1 a"]
+        )
+
+  def test_forged_id_tag_ignored(self):
+    self.run_test(
+        filter_args = ["A"],
+        todo0 = ["(B) b"],
+        edit0 = [],
+        edit1 = ["i:1 a"],
+        todo1 = ["(B) b", "(A) a"]
         )
 
   def test_insert_task_with_multiple(self):
