@@ -71,6 +71,9 @@ class VirtualTodoEnv(unittest.TestCase):
   def launch_editor(self, path):
     self.assertEqual(self.__edit_file_path, path)
 
+  def print_diff(self, id, task_a, task_b):
+    self.assertNotEqual(task_a, task_b)
+
   def assert_success(self):
     if self.expect_clean_exit:
       self.assertTrue(self.__edit_dir.clean_exit, msg = "Expected edit directory to be used and cleaned up")
