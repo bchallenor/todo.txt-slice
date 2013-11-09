@@ -262,6 +262,13 @@ class SliceMatchTest(SliceTest):
         edit0 = ["i:2 a"]
         )
 
+  def test_match_task_hides_but_preserves_date(self):
+    self.run_test(
+        filter_args = ["A"],
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["i:1 a"]
+        )
+
   def test_insert_task_with_multiple(self):
     self.run_test(
         filter_args = ["A", "@c", "+p", "k:v"],
