@@ -245,6 +245,15 @@ class SliceBasicTest(SliceTest):
         todo1 = ["x"]
         )
 
+  # regression test
+  def test_invalid_id_tag_ignored(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["i:foo x"],
+        todo1 = ["x"]
+        )
+
 
 class SliceMatchTest(SliceTest):
   filter_name = "match"

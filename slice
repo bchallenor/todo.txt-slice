@@ -476,11 +476,14 @@ class BatchEditor:
       id = None
       id_tag, task = task.pop_key_value_tag("i")
       if id_tag:
-        tmpid = int(id_tag.value)
-        if tmpid in self.editable_tasks: # safety check
-          id = tmpid
-        else:
-          log("ignoring invalid id: %s" % id_tag) #todo: test
+        try:
+          tmpid = int(id_tag.value)
+          if tmpid in self.editable_tasks: # safety check
+            id = tmpid
+          else:
+            log("ignoring unknown id: %s" % id_tag)
+        except ValueError:
+          log("ignoring invalid id: %s" % id_tag)
       if id is None:
         id = next_id
         next_id += 1
