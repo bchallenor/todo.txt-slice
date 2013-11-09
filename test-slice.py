@@ -91,7 +91,7 @@ class AbstractSliceTest:
 
   def run_test(
       self,
-      filter_args = [],
+      slice_args = [],
       expect_clean_exit = True,
       todo0 = None,
       edit0 = None,
@@ -108,9 +108,9 @@ class AbstractSliceTest:
     if self.action_name is not None:
       args.append(self.action_name)
 
-      if self.filter_name is not None:
-        args.append(self.filter_name)
-        args.extend(filter_args)
+      if self.slice_name is not None:
+        args.append(self.slice_name)
+        args.extend(slice_args)
 
     env = VirtualTodoEnv(
         expect_clean_exit = expect_clean_exit,
@@ -182,7 +182,7 @@ class AbstractSliceTest:
 
 
 class SliceAllTest(AbstractSliceTest, unittest.TestCase):
-  filter_name = "all"
+  slice_name = "all"
 
   def test_single_task(self):
     self.run_test(
@@ -307,53 +307,53 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
 
 
 class SliceMatchTest(SliceAllTest):
-  filter_name = "match"
+  slice_name = "match"
 
   def test_match_task_with_priority(self):
     self.run_test(
-        filter_args = ["A"],
+        slice_args = ["A"],
         todo0 = ["x", "(A) a"],
         edit0 = ["i:2 a"]
         )
 
   def test_match_task_with_no_level_priority(self):
     self.run_test(
-        filter_args = ["_"],
+        slice_args = ["_"],
         todo0 = ["x", "(A) a"],
         edit0 = ["i:1 x"]
         )
 
   def test_match_task_with_context(self):
     self.run_test(
-        filter_args = ["@c"],
+        slice_args = ["@c"],
         todo0 = ["x", "a @c"],
         edit0 = ["i:2 a"]
         )
 
   def test_match_task_with_project(self):
     self.run_test(
-        filter_args = ["+p"],
+        slice_args = ["+p"],
         todo0 = ["x", "a +p"],
         edit0 = ["i:2 a"]
         )
 
   def test_match_task_with_kv(self):
     self.run_test(
-        filter_args = ["k:v"],
+        slice_args = ["k:v"],
         todo0 = ["x", "a k:v"],
         edit0 = ["i:2 a"]
         )
 
   def test_match_task_hides_but_preserves_date(self):
     self.run_test(
-        filter_args = ["A"],
+        slice_args = ["A"],
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["i:1 a"]
         )
 
   def test_forged_id_tag_ignored(self):
     self.run_test(
-        filter_args = ["A"],
+        slice_args = ["A"],
         todo0 = ["(B) b"],
         edit0 = [],
         edit1 = ["i:1 a"],
@@ -362,7 +362,7 @@ class SliceMatchTest(SliceAllTest):
 
   def test_insert_task_with_no_level_priority(self):
     self.run_test(
-        filter_args = ["_"],
+        slice_args = ["_"],
         todo0 = [],
         edit0 = [],
         edit1 = ["y"],
@@ -371,7 +371,7 @@ class SliceMatchTest(SliceAllTest):
 
   def test_insert_task_with_duplicate_tag(self):
     self.run_test(
-        filter_args = ["@c"],
+        slice_args = ["@c"],
         todo0 = [],
         edit0 = [],
         edit1 = ["y @c"],
@@ -380,7 +380,7 @@ class SliceMatchTest(SliceAllTest):
 
   def test_insert_task_with_multiple_tags(self):
     self.run_test(
-        filter_args = ["A", "@c", "+p", "k:v"],
+        slice_args = ["A", "@c", "+p", "k:v"],
         todo0 = [],
         edit0 = [],
         edit1 = ["y"],
@@ -389,7 +389,7 @@ class SliceMatchTest(SliceAllTest):
 
   def test_edit_task_with_multiple_tags(self):
     self.run_test(
-        filter_args = ["A", "@c", "+p", "k:v"],
+        slice_args = ["A", "@c", "+p", "k:v"],
         todo0 = ["x", "(A) a @c +p k:v", "(A) a +q"],
         edit0 = ["i:2 a"],
         edit1 = ["i:2 y"],
@@ -398,7 +398,7 @@ class SliceMatchTest(SliceAllTest):
 
 
 class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
-  filter_name = "review"
+  slice_name = "review"
 
   def test_reviewable_by_age(self):
     self.run_test(
