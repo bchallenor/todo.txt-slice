@@ -72,6 +72,47 @@ class TodoEnv:
     subprocess.check_call([self.editor_path, path])
 
 
+class Priority:
+  __priority_re = re.compile(r"""^
+    ( \( (?P<level> [A-Z_] ) \) )?
+  $""", re.VERBOSE)
+
+  @classmethod
+  def parse(cls, raw):
+    m = cls.__priority_re.match(raw)
+    if m is None:
+      raise ValueError("Cannot parse priority: %s" % raw)
+    raw_level = m.group("level")
+    explicit = raw_level is not None
+    level = raw_level if raw_level != "_" else None
+    priority = Priority(level, explicit)
+    assert priority.raw == raw, "parsing should not lose information: <%s> != <%s>" % (priority.raw, raw)
+    return priority
+
+  def __init__(self, level = None, explicit_no_level = False):
+    if level is not None and level not in string.ascii_uppercase:
+      raise ValueError("Invalid level: %s" % level)
+    self.level = level
+    self.explicit = level is not None or explicit_no_level
+    self.raw = "(" + (level or "_") + ")" if self.explicit else ""
+
+  def normalize(self, explicit_no_level):
+    return Priority(self.level, explicit_no_level) if not self.level and self.explicit != explicit_no_level else self
+
+  def __repr__(self):
+    return self.raw
+
+  # ignore explicitness in comparison
+  def __eq__(self, other):
+    return other is not None and self.level.__eq__(other.level)
+
+  def __ne__(self, other):
+    return not self.__eq__(other)
+
+  def __hash__(self):
+    return self.level.__hash__()
+
+
 class Tag:
   __tag_re = re.compile(r"""
     (
@@ -111,7 +152,7 @@ class Tag:
     if m and m.group(0) == raw: # check the whole string was matched
       return cls.__handle_match(m)
     else:
-      return None
+      raise ValueError("Cannot parse tag: %s" % raw)
 
   # returns a list of Tags and non-empty strings
   @classmethod
@@ -184,7 +225,7 @@ class Task:
   __task_re = re.compile(r"""
     ^
     ( x \s+ (?P<complete> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
-    ( \( (?P<priority> [A-Z] ) \) \s+ )?
+    ( (?P<priority> \( [A-Z_] \) ) \s+ )?
     ( (?P<create> [0-9]{4}-[0-9]{2}-[0-9]{2} ) \s+ )?
     (?P<title> .*? )
     $
@@ -230,7 +271,7 @@ class Task:
     m = cls.__task_re.match(line)
     assert m is not None, "__task_re should match all lines: %s" % line
     title = m.group("title")
-    priority = m.group("priority")
+    priority = Priority.parse(m.group("priority")) if m.group("priority") else Priority()
     create_date = cls.__parse_date(m.group("create"))
     complete_date = cls.__parse_date(m.group("complete"))
     task = cls(title, priority, create_date, complete_date)
@@ -246,7 +287,7 @@ class Task:
     self.complete_date = complete_date
     self.line = "".join([
       "x %s " % complete_date.isoformat() if complete_date else "",
-      "(%s) " % priority if priority else "",
+      priority.raw + (" " if len(priority.raw) > 0 else ""),
       "%s " % create_date.isoformat() if create_date else "",
       title
     ])
@@ -353,7 +394,7 @@ class InboxTaskFilter(TaskFilter):
     TaskFilter.__init__(self, env)
 
   def matches(self, task):
-    return not task.priority or (task.start_date and task.start_date <= self.env.today) # todo: add more rules
+    return not task.priority.level or (task.start_date and task.start_date <= self.env.today) # todo: add more rules
 
   def apply(self, task):
     filtered_task = task
@@ -378,24 +419,20 @@ class MatchTaskFilter(TaskFilter):
   def apply(self, task):
     filtered_task = task
     filtered_task = filtered_task.remove_tags(self.tags)
-    filtered_task = filtered_task.set_priority(None if self.priority else task.priority)
+    filtered_task = filtered_task.set_priority(Priority() if self.priority else task.priority)
     filtered_task = filtered_task.set_create_date(None)
     return filtered_task
 
   def unapply(self, filtered_task, original_task):
     task = filtered_task
     task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
-    task = task.set_priority((task.priority or self.priority) if not task.complete_date else None)
+    if self.priority and not task.priority.level:
+      task = task.set_priority(self.priority)
     task = task.add_tags(self.tags)
     return task
 
 
 class ReviewTaskFilter(TaskFilter):
-  # unprioritized tasks must be performed on the day they are defined, or they will show up in the next review
-  __no_priority_interval = timedelta(days = 1)
-  # unconfigured priorities will never escape the review
-  __unconfigured_priority_interval = timedelta(days = 0)
-
   def __init__(self, env, priority_to_interval):
     TaskFilter.__init__(self, env)
     self.priority_to_interval = priority_to_interval
@@ -405,49 +442,21 @@ class ReviewTaskFilter(TaskFilter):
       return True
 
     age = self.env.today - task.create_date
-
-    if task.priority:
-      interval = self.priority_to_interval[task.priority] if task.priority in self.priority_to_interval else self.__unconfigured_priority_interval
-    else:
-      interval = self.__no_priority_interval
-
+    interval = self.priority_to_interval[task.priority]
     return age >= interval
 
   def apply(self, task):
-    act_tag = KeyValueTag("act", "_")
     filtered_task = task
-    filtered_task = filtered_task.add_tags(set([act_tag]), prepend = True)
+    filtered_task = filtered_task.set_priority(Priority(None, True))
     return filtered_task
 
   def unapply(self, filtered_task, original_task):
     task = filtered_task
-    create_date = task.create_date
-    priority = task.priority if not task.complete_date else None
-
-    act_tag, task = task.pop_key_value_tag("act")
-    if act_tag and not task.is_hidden(self.env.today):
-      if act_tag.value == "_":
-        pass
-      elif act_tag.value == "k":
-        create_date = self.env.today
-        priority = task.priority
-      elif act_tag.value == "i":
-        if task.priority:
-          create_date = self.env.today
-          priority = chr(max(ord(task.priority) - 1, ord("A"))) #todo: take into account review periods
-        else:
-          log("task does not have a priority to increase: %s" % task)
-      elif act_tag.value == "d":
-        if task.priority:
-          create_date = self.env.today
-          priority = chr(min(ord(task.priority) + 1, ord("Z"))) #todo: take into account review periods
-        else:
-          log("task does not have a priority to decrease: %s" % task)
-      else:
-        log("discarding unknown command: %s" % act_tag.value)
-
-    task = task.set_priority(priority)
-    task = task.set_create_date(create_date)
+    if task.priority.level:
+      if not task.complete_date:
+        task = task.set_create_date(self.env.default_create_date)
+    else:
+      task = task.set_priority(original_task.priority)
     return task
 
 
@@ -511,6 +520,11 @@ class BatchEditor:
       existing_task = merged_tasks[id] if id in merged_tasks else None
 
       task = self.task_filter.unapply(edited_task, existing_task)
+
+      priority = task.priority if not task.complete_date else Priority()
+      task = task.set_priority(priority.normalize(explicit_no_level = False))
+
+      task = task
 
       if existing_task != task:
         self.__diff(id, existing_task, task)
@@ -585,10 +599,11 @@ def build_match_filter(env, args):
   tags = set()
 
   if len(args) > 0 and len(args[0]) == 1:
-    priority = args.pop(0)
-    if priority not in string.ascii_uppercase:
+    priority_level = args.pop(0)
+    if priority_level != "_" and priority_level not in string.ascii_uppercase: #TODO: this level logic shouldn't be here
       usage()
       sys.exit(1)
+    priority = Priority(priority_level if priority_level != "_" else None)
 
   while len(args) > 0:
     arg = args.pop()
@@ -612,13 +627,15 @@ def build_review_filter(env, args):
       usage()
       sys.exit(1)
 
-    [priority, interval_str] = pair
+    [priority_level, interval_str] = pair
 
-    if priority not in string.ascii_uppercase:
+    if priority_level not in string.ascii_uppercase:
       log("Error parsing %s='%s': %s is not a priority" % (key, value, priority))
       log()
       usage()
       sys.exit(1)
+
+    priority = Priority(priority_level)
 
     try:
       interval = int(interval_str)
@@ -629,6 +646,16 @@ def build_review_filter(env, args):
       sys.exit(1)
 
     priority_to_interval[priority] = timedelta(days = interval)
+
+  # unprioritized tasks must be performed on the day they are defined, or they will show up in the next review
+  priority_to_interval[Priority()] = timedelta(days = 1)
+
+  # unconfigured priorities will never escape the review
+  for priority_level in string.ascii_uppercase:
+    priority = Priority(priority_level)
+
+    if priority not in priority_to_interval:
+      priority_to_interval[priority] = timedelta(days = 0)
 
   return ReviewTaskFilter(env, priority_to_interval)
 

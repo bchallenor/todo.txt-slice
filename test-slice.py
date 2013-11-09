@@ -190,6 +190,15 @@ class SliceBasicTest(SliceTest):
         date_on_add = True
         )
 
+  # regression test
+  def test_insert_task_with_explicit_no_level(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["(_) new"],
+        todo1 = ["new"]
+        )
+
   def test_remove_task(self):
     self.run_test(
         todo0 = ["x"],
@@ -301,6 +310,13 @@ class SliceMatchTest(SliceTest):
         edit0 = ["i:2 a"]
         )
 
+  def test_match_task_with_no_level_priority(self):
+    self.run_test(
+        filter_args = ["_"],
+        todo0 = ["x", "(A) a"],
+        edit0 = ["i:1 x"]
+        )
+
   def test_match_task_with_context(self):
     self.run_test(
         filter_args = ["@c"],
@@ -338,7 +354,16 @@ class SliceMatchTest(SliceTest):
         todo1 = ["(B) b", "(A) a"]
         )
 
-  def test_insert_task_with_duplicate(self):
+  def test_insert_task_with_no_level_priority(self):
+    self.run_test(
+        filter_args = ["_"],
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["y"],
+        todo1 = ["y"]
+        )
+
+  def test_insert_task_with_duplicate_tag(self):
     self.run_test(
         filter_args = ["@c"],
         todo0 = [],
@@ -347,7 +372,7 @@ class SliceMatchTest(SliceTest):
         todo1 = ["y @c"]
         )
 
-  def test_insert_task_with_multiple(self):
+  def test_insert_task_with_multiple_tags(self):
     self.run_test(
         filter_args = ["A", "@c", "+p", "k:v"],
         todo0 = [],
@@ -356,7 +381,7 @@ class SliceMatchTest(SliceTest):
         todo1 = ["(A) y @c +p k:v"]
         )
 
-  def test_edit_task_with_multiple(self):
+  def test_edit_task_with_multiple_tags(self):
     self.run_test(
         filter_args = ["A", "@c", "+p", "k:v"],
         todo0 = ["x", "(A) a @c +p k:v", "(A) a +q"],
