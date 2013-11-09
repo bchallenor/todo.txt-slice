@@ -86,7 +86,7 @@ class VirtualTodoEnv(unittest.TestCase):
       self.assertFalse(self.__todo_file_path_written, msg = "Expected todo file to be untouched")
 
 
-class SliceTest(unittest.TestCase):
+class AbstractSliceTest:
   action_name = "slice"
 
   def run_test(
@@ -129,14 +129,60 @@ class SliceTest(unittest.TestCase):
     env.assert_success()
 
 
-class SliceAllTest(SliceTest):
-  filter_name = "all"
+  # the tests in this class should work with any slice as they start empty
 
   def test_no_tasks(self):
     self.run_test(
         todo0 = [],
         edit0 = []
         )
+
+  def test_insert_task(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x"],
+        todo1 = ["x"],
+        )
+
+  def test_insert_task_with_date(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x"],
+        todo1 = ["2000-01-01 x"],
+        date_on_add = True
+        )
+
+  # regression test
+  def test_insert_task_with_explicit_no_level(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["(_) new"],
+        todo1 = ["new"]
+        )
+
+  def test_unknown_id_tag_ignored(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["i:42 x"],
+        todo1 = ["x"]
+        )
+
+  # regression test
+  def test_invalid_id_tag_ignored(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["i:foo x"],
+        todo1 = ["x"]
+        )
+
+
+class SliceAllTest(AbstractSliceTest, unittest.TestCase):
+  filter_name = "all"
 
   def test_single_task(self):
     self.run_test(
@@ -174,32 +220,6 @@ class SliceAllTest(SliceTest):
         todo0 = ["past t:1999-12-31", "present t:2000-01-01", "future t:2000-01-02"],
         edit0 = ["i:1 past t:1999-12-31", "i:2 present t:2000-01-01", "i:3 future t:2000-01-02"],
         disable_filter = True
-        )
-
-  def test_insert_task(self):
-    self.run_test(
-        todo0 = [],
-        edit0 = [],
-        edit1 = ["x"],
-        todo1 = ["x"],
-        )
-
-  def test_insert_task_with_date(self):
-    self.run_test(
-        todo0 = [],
-        edit0 = [],
-        edit1 = ["x"],
-        todo1 = ["2000-01-01 x"],
-        date_on_add = True
-        )
-
-  # regression test
-  def test_insert_task_with_explicit_no_level(self):
-    self.run_test(
-        todo0 = [],
-        edit0 = [],
-        edit1 = ["(_) new"],
-        todo1 = ["new"]
         )
 
   def test_remove_task(self):
@@ -275,23 +295,6 @@ class SliceAllTest(SliceTest):
     self.run_test(
         todo0 = ["http://example.com @c"],
         edit0 = ["i:1 http://example.com @c"]
-        )
-
-  def test_unknown_id_tag_ignored(self):
-    self.run_test(
-        todo0 = [],
-        edit0 = [],
-        edit1 = ["i:42 x"],
-        todo1 = ["x"]
-        )
-
-  # regression test
-  def test_invalid_id_tag_ignored(self):
-    self.run_test(
-        todo0 = [],
-        edit0 = [],
-        edit1 = ["i:foo x"],
-        todo1 = ["x"]
         )
 
   def test_duplicate_id_tag_ignored(self):
@@ -394,7 +397,7 @@ class SliceMatchTest(SliceAllTest):
         )
 
 
-class SliceReviewTest(SliceTest):
+class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
   filter_name = "review"
 
   def test_reviewable_age(self):
@@ -466,25 +469,6 @@ class SliceReviewTest(SliceTest):
         edit0 = ["(_) i:1 a"],
         edit1 = ["(_) i:1 b"],
         todo1 = ["(A) 1999-12-31 b"],
-        )
-
-  # regression test
-  def test_insert_task(self):
-    self.run_test(
-        todo0 = [],
-        edit0 = [],
-        edit1 = ["x"],
-        todo1 = ["x"],
-        )
-
-  # regression test
-  def test_insert_task_with_date(self):
-    self.run_test(
-        todo0 = [],
-        edit0 = [],
-        edit1 = ["x"],
-        todo1 = ["2000-01-01 x"],
-        date_on_add = True
         )
 
 
