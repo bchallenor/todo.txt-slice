@@ -459,7 +459,7 @@ class ReviewTaskSlice(TaskSlice):
     return task
 
 
-class BatchEditor:
+class SliceEditor:
   def __init__(self, env, tasks, task_slice):
     self.env = env
     self.tasks = tasks
@@ -701,7 +701,7 @@ def main(env, args):
   tasks = Task.load_all(env, env.todo_file_path)
 
   task_slice = build_slice(env, slice_name, slice_args)
-  editor = BatchEditor(env, tasks, task_slice)
+  editor = SliceEditor(env, tasks, task_slice)
   merged_tasks = editor.edit_and_merge()
 
   if merged_tasks != tasks:
