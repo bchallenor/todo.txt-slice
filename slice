@@ -587,15 +587,17 @@ def usage():
   print()
   print("      The review age for each priority is defined in TODOTXT_SLICE_REVIEW_INTERVALS,")
   print("      which should consist of <priority>:<interval> pairs separated by commas.")
+  print("      An underscore can be used to define an interval for unprioritized tasks.")
   print()
-  print("      For example, 'A:1,B:7,C:56,Z:182' means:")
+  print("      For example, '_:0,A:1,B:7,C:56,Z:182' means:")
+  print("      - unprioritized tasks should be reviewed immediately")
   print("      - 'A' tasks should be reviewed after 1 day")
   print("      - 'B' tasks should be reviewed after 7 days")
   print("      - 'C' tasks should be reviewed after 56 days")
   print("      - 'Z' tasks should be reviewed after 182 days")
   print()
-  print("      By default, tasks with no priority will require review after a single day,")
-  print("      and tasks with unconfigured priorities will _never_ escape review.")
+  print("      Note: The default interval is 0, so unconfigured priorities (e.g. 'D' above)")
+  print("            will _never_ escape review.")
   print()
 
 
@@ -643,13 +645,13 @@ def build_review_filter(env, args):
 
     [priority_level, interval_str] = pair
 
-    if priority_level not in string.ascii_uppercase:
-      log("Error parsing %s='%s': %s is not a priority" % (key, value, priority))
+    try:
+      priority = Priority.parse("(%s)" % priority_level)
+    except ValueError:
+      log("Error parsing %s='%s': %s is not a priority" % (key, value, priority_level))
       log()
       usage()
       sys.exit(1)
-
-    priority = Priority(priority_level)
 
     try:
       interval = int(interval_str)
@@ -660,9 +662,6 @@ def build_review_filter(env, args):
       sys.exit(1)
 
     priority_to_interval[priority] = timedelta(days = interval)
-
-  # unprioritized tasks must be performed on the day they are defined, or they will show up in the next review
-  priority_to_interval[Priority(None)] = timedelta(days = 1)
 
   # unconfigured priorities will never escape the review
   for priority_level in string.ascii_uppercase:

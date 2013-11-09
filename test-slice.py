@@ -418,9 +418,10 @@ class SliceReviewTest(SliceTest):
         edit0 = ["(_) i:1 a"]
         )
 
-  def test_unprioritized_reviewable_next_day(self):
+  def test_reviewable_by_no_priority(self):
     self.run_test(
-        todo0 = ["1999-12-31 a", "2000-01-01 b"],
+        slice_review_intervals = "_:0,B:1",
+        todo0 = ["2000-01-01 a", "(B) 2000-01-01 b"],
         edit0 = ["(_) i:1 a"]
         )
 
