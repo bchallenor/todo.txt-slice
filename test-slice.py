@@ -54,11 +54,11 @@ class VirtualTodoEnv(unittest.TestCase):
 
   def write_lines(self, path, lines):
     if path == self.todo_file_path:
+      self.assertEqual(self.__todo_post, lines, msg = "Todo file content does not match expected content")
       self.__todo_file_path_written = True
-      self.assertEqual(lines, self.__todo_post)
     elif path == self.__slice_file_path:
+      self.assertEqual(self.__slice_pre, lines, msg = "Slice file content does not match expected content")
       self.__slice_file_path_written = True
-      self.assertEqual(lines, self.__slice_pre)
     else:
       self.fail("attempt to write unknown path: %s" % path)
 
@@ -66,7 +66,7 @@ class VirtualTodoEnv(unittest.TestCase):
     return self.__slice_dir
 
   def launch_editor(self, path):
-    self.assertEqual(path, self.__slice_file_path)
+    self.assertEqual(self.__slice_file_path, path)
 
   def assert_success(self):
     self.assertTrue(self.__slice_dir.clean_exit, msg = "Expected slice directory to be used and cleaned up")
@@ -100,10 +100,10 @@ class SliceTest(unittest.TestCase):
         args.extend(filter_args)
 
     env = VirtualTodoEnv(
-        todo_pre,
-        slice_pre,
-        slice_post if slice_post is not None else slice_pre,
-        todo_post if todo_post is not None else todo_pre,
+        todo_pre = todo_pre,
+        slice_pre = slice_pre,
+        slice_post = slice_post if slice_post is not None else slice_pre,
+        todo_post = todo_post if todo_post is not None else todo_pre,
         date_on_add = date_on_add,
         preserve_line_numbers = preserve_line_numbers,
         disable_filter = disable_filter
@@ -118,7 +118,7 @@ class SliceTest(unittest.TestCase):
 class SliceMatchTest(SliceTest):
   filter_name = "match"
 
-  def test_normal_tasks_are_not_hidden(self):
+  def test_single_task(self):
     self.run_test(
         todo_pre = [
           "task"
