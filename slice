@@ -13,15 +13,6 @@ def log(str=""):
   sys.stderr.write("\n")
 
 
-editor_path = os.environ["EDITOR"]
-
-todo_file_path = os.environ["TODO_FILE"]
-date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
-default_create_date = date.today() if date_on_add else None
-preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
-disable_filter = os.environ["TODOTXT_DISABLE_FILTER"] == "1"
-
-
 class ColorDiff:
   __CYAN = "\033[36m"
   __RED = "\033[31m"
@@ -49,6 +40,34 @@ class ColorDiff:
     if len(b) > 0:
       print("".join(b_out))
     print()
+
+
+class TodoEnv:
+  today = date.today()
+
+  def __init__(self):
+    self.todo_dir_path = os.environ["TODO_DIR"]
+    self.todo_file_path = os.environ["TODO_FILE"]
+    self.editor_path = os.environ["EDITOR"]
+    self.date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
+    self.default_create_date = self.today if self.date_on_add else None
+    self.preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
+    self.disable_filter = os.environ["TODOTXT_DISABLE_FILTER"] == "1"
+    self.slice_review_intervals = os.environ["TODOTXT_SLICE_REVIEW_INTERVALS"]
+
+  def read_lines(self, path):
+    with open(path, "r", encoding="utf-8") as f:
+      return f.read().splitlines()
+
+  def write_lines(self, path, lines):
+    with open(path, "w", encoding="utf-8") as f:
+      f.write("\n".join(lines))
+
+  def create_temp_dir(self):
+    return tempfile.TemporaryDirectory()
+
+  def launch_editor(self, path):
+    subprocess.check_call([self.editor_path, path])
 
 
 class Tag:
@@ -179,27 +198,26 @@ class Task:
       return None
 
   @classmethod
-  def load_all(cls, path):
-    with open(path, "r", encoding="utf-8") as f:
-      tasks = {}
-      for i, line in enumerate(f):
-        id = i + 1
-        line1 = line.rstrip("\r\n")
-        if len(line1) > 0:
-          tasks[id] = cls.parse(line1)
-      return tasks
+  def load_all(cls, env, path):
+    tasks = {}
+    for i, line in enumerate(env.read_lines(path)):
+      id = i + 1
+      line1 = line.rstrip("\r\n")
+      if len(line1) > 0:
+        tasks[id] = cls.parse(line1)
+    return tasks
 
   @classmethod
-  def save_all(cls, tasks, path):
-    with open(path, "w", encoding="utf-8") as f:
-      max_id = max(tasks.keys()) if len(tasks) > 0 else 0
-      for id in range(1, max_id + 1):
-        if id in tasks:
-          task = tasks[id]
-          f.write(task.line)
-          f.write("\n")
-        elif preserve_line_numbers:
-          f.write("\n")
+  def save_all(cls, env, tasks, path):
+    lines = []
+    max_id = max(tasks.keys()) if len(tasks) > 0 else 0
+    for id in range(1, max_id + 1):
+      if id in tasks:
+        task = tasks[id]
+        lines.append(task.line)
+      elif env.preserve_line_numbers:
+        lines.append("")
+    env.write_lines(path, lines)
 
   @classmethod
   def sorted(cls, tasks, key = lambda task: task.line):
@@ -219,7 +237,7 @@ class Task:
     assert remove_whitespace(task.line) == remove_whitespace(line), "parsing should not lose information other than whitespace: <%s> != <%s>" % (task.line, line)
     return task
 
-  def __init__(self, title, priority, create_date = date.today(), complete_date = None):
+  def __init__(self, title, priority, create_date, complete_date):
     self.title = title
     self.priority = priority
     self.create_date = create_date
@@ -248,8 +266,8 @@ class Task:
   def __hash__(self):
     return self.line.__hash__()
 
-  def is_hidden(self):
-    return self.complete_date or (self.start_date and self.start_date > date.today())
+  def is_hidden(self, date):
+    return self.complete_date or (self.start_date and self.start_date > date)
 
   def remove_tags(self, tags):
     title = self.title
@@ -315,6 +333,9 @@ class Task:
 
 
 class TaskFilter:
+  def __init__(self, env):
+    self.env = env
+
   def matches(task):
     raise NotImplementedError
 
@@ -326,11 +347,11 @@ class TaskFilter:
 
 
 class InboxTaskFilter(TaskFilter):
-  def __init__(self):
-    pass
+  def __init__(self, env):
+    TaskFilter.__init__(self, env)
 
   def matches(self, task):
-    return not task.priority or (task.start_date and task.start_date <= date.today()) # todo: add more rules
+    return not task.priority or (task.start_date and task.start_date <= self.env.today) # todo: add more rules
 
   def apply(self, task):
     filtered_task = task
@@ -339,12 +360,13 @@ class InboxTaskFilter(TaskFilter):
 
   def unapply(self, filtered_task, original_task):
     task = filtered_task
-    task = task.set_create_date(original_task.create_date if original_task else default_create_date)
+    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
     return task
 
 
 class MatchTaskFilter(TaskFilter):
-  def __init__(self, priority = None, tags = set()):
+  def __init__(self, env, priority = None, tags = set()):
+    TaskFilter.__init__(self, env)
     self.priority = priority
     self.tags = tags
 
@@ -360,7 +382,7 @@ class MatchTaskFilter(TaskFilter):
 
   def unapply(self, filtered_task, original_task):
     task = filtered_task
-    task = task.set_create_date(original_task.create_date if original_task else default_create_date)
+    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
     task = task.set_priority((task.priority or self.priority) if not task.complete_date else None)
     task = task.add_tags(self.tags)
     return task
@@ -372,14 +394,15 @@ class ReviewTaskFilter(TaskFilter):
   # unconfigured priorities will never escape the review
   __unconfigured_priority_interval = timedelta(days = 0)
 
-  def __init__(self, priority_to_interval):
+  def __init__(self, env, priority_to_interval):
+    TaskFilter.__init__(self, env)
     self.priority_to_interval = priority_to_interval
 
   def matches(self, task):
     if not task.create_date:
       return True
 
-    age = date.today() - task.create_date
+    age = self.env.today - task.create_date
 
     if task.priority:
       interval = self.priority_to_interval[task.priority] if task.priority in self.priority_to_interval else self.__unconfigured_priority_interval
@@ -400,21 +423,21 @@ class ReviewTaskFilter(TaskFilter):
     priority = task.priority if not task.complete_date else None
 
     act_tag, task = task.pop_key_value_tag("act")
-    if act_tag and not task.is_hidden():
+    if act_tag and not task.is_hidden(self.env.today):
       if act_tag.value == "_":
         pass
       elif act_tag.value == "k":
-        create_date = date.today()
+        create_date = self.env.today
         priority = task.priority
       elif act_tag.value == "i":
         if task.priority:
-          create_date = date.today()
+          create_date = self.env.today
           priority = chr(max(ord(task.priority) - 1, ord("A"))) #todo: take into account review periods
         else:
           log("task does not have a priority to increase: %s" % task)
       elif act_tag.value == "d":
         if task.priority:
-          create_date = date.today()
+          create_date = self.env.today
           priority = chr(min(ord(task.priority) + 1, ord("Z"))) #todo: take into account review periods
         else:
           log("task does not have a priority to decrease: %s" % task)
@@ -427,7 +450,8 @@ class ReviewTaskFilter(TaskFilter):
 
 
 class BatchEditor:
-  def __init__(self, tasks, task_filter):
+  def __init__(self, env, tasks, task_filter):
+    self.env = env
     self.tasks = tasks
     self.task_filter = task_filter
     self.max_id = max(tasks.keys()) if len(tasks) > 0 else 0
@@ -435,11 +459,10 @@ class BatchEditor:
     self.editable_tasks = self.__get_editable_tasks(tasks, task_filter, self.max_id_len)
     self.sorted_editable_tasks = Task.sorted(self.editable_tasks)
 
-  @staticmethod
-  def __get_editable_tasks(tasks, task_filter, max_id_len):
+  def __get_editable_tasks(self, tasks, task_filter, max_id_len):
     editable_tasks = {}
     for id, task in tasks.items():
-      if (not task.is_hidden() or disable_filter) and task_filter.matches(task):
+      if (not task.is_hidden(self.env.today) or self.env.disable_filter) and task_filter.matches(task):
         id_tag = KeyValueTag("i", str(id).zfill(max_id_len))
         editable_task = task_filter.apply(task)
         editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
@@ -490,14 +513,13 @@ class BatchEditor:
 
     return merged_tasks
 
-  @staticmethod
-  def __edit(tasks):
+  def __edit(self, tasks):
     # we want the file to be named todo.txt for compatibility with syntax-highlighting editors
-    with tempfile.TemporaryDirectory() as temp_dir_path:
+    with self.env.create_temp_dir() as temp_dir_path:
       temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
-      Task.save_all(tasks, temp_todo_path)
-      subprocess.check_call([editor_path, temp_todo_path])
-      return Task.load_all(temp_todo_path)
+      Task.save_all(self.env, tasks, temp_todo_path)
+      self.env.launch_editor(temp_todo_path)
+      return Task.load_all(self.env, temp_todo_path)
 
   def edit_and_merge(self):
     edited_tasks = self.__edit(self.sorted_editable_tasks)
@@ -549,11 +571,11 @@ def usage():
   print()
 
 
-def build_inbox_filter(args, env):
-  return InboxTaskFilter()
+def build_inbox_filter(env, args):
+  return InboxTaskFilter(env)
 
 
-def build_match_filter(args, env):
+def build_match_filter(env, args):
   priority = None
   tags = set()
 
@@ -571,21 +593,13 @@ def build_match_filter(args, env):
       sys.exit(1)
     tags.add(tag)
 
-  return MatchTaskFilter(priority, tags)
+  return MatchTaskFilter(env, priority, tags)
 
 
-def build_review_filter(args, env):
-  key = "TODOTXT_SLICE_REVIEW_INTERVALS"
-  if key not in env:
-    log("Environment variable %s is not defined" % key)
-    log()
-    usage()
-    sys.exit(1)
-
-  value = env[key]
+def build_review_filter(env, args):
   priority_to_interval = {}
 
-  for priority_interval_str in value.split(","):
+  for priority_interval_str in env.slice_review_intervals.split(","):
     pair = priority_interval_str.split(":")
     if len(pair) != 2:
       log("Error parsing %s='%s': expected <priority>:<interval> pairs separated by commas" % (key, value))
@@ -611,10 +625,10 @@ def build_review_filter(args, env):
 
     priority_to_interval[priority] = timedelta(days = interval)
 
-  return ReviewTaskFilter(priority_to_interval)
+  return ReviewTaskFilter(env, priority_to_interval)
 
 
-def build_filter(name, args, env):
+def build_filter(env, name, args):
   filters = {
     "inbox": build_inbox_filter,
     "match": build_match_filter,
@@ -625,10 +639,10 @@ def build_filter(name, args, env):
     usage()
     sys.exit(1)
 
-  return filters[name](args, env)
+  return filters[name](env, args)
 
 
-def main(args, env):
+def main(env, args):
   if len(args) < 2:
     usage()
     sys.exit(1)
@@ -647,15 +661,15 @@ def main(args, env):
   filter_name = action_args[0]
   filter_args = action_args[1:]
 
-  tasks = Task.load_all(todo_file_path)
+  tasks = Task.load_all(env, env.todo_file_path)
 
-  task_filter = build_filter(filter_name, filter_args, env)
-  editor = BatchEditor(tasks, task_filter)
+  task_filter = build_filter(env, filter_name, filter_args)
+  editor = BatchEditor(env, tasks, task_filter)
   merged_tasks = editor.edit_and_merge()
 
-  Task.save_all(merged_tasks, todo_file_path)
+  Task.save_all(env, merged_tasks, env.todo_file_path)
 
 
 if __name__ == "__main__":
-  main(sys.argv, os.environ)
+  main(TodoEnv(), sys.argv)
 
