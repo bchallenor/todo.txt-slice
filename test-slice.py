@@ -254,6 +254,14 @@ class SliceBasicTest(SliceTest):
         todo1 = ["x"]
         )
 
+  def test_duplicate_id_tag_ignored(self):
+    self.run_test(
+        todo0 = ["a"],
+        edit0 = ["i:1 a"],
+        edit1 = ["i:1 i:1 x"],
+        todo1 = ["x"]
+        )
+
 
 class SliceMatchTest(SliceTest):
   filter_name = "match"
@@ -300,6 +308,15 @@ class SliceMatchTest(SliceTest):
         edit0 = [],
         edit1 = ["i:1 a"],
         todo1 = ["(B) b", "(A) a"]
+        )
+
+  def test_insert_task_with_duplicate(self):
+    self.run_test(
+        filter_args = ["@c"],
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["y @c"],
+        todo1 = ["y @c"]
         )
 
   def test_insert_task_with_multiple(self):
