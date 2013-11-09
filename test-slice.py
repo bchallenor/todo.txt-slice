@@ -86,7 +86,7 @@ class SliceTest(unittest.TestCase):
       slice_post = None,
       todo_post = None,
       date_on_add = False,
-      preserve_line_numbers = False,
+      preserve_line_numbers = True,
       disable_filter = False
       ):
 
@@ -135,6 +135,27 @@ class SliceMatchTest(SliceTest):
           ],
         slice_pre = [
           ]
+        )
+
+  def test_empty_line_is_preserved(self):
+    self.run_test(
+        todo_pre = [
+          "",
+          "orig"
+          ],
+        slice_pre = [
+          "i:2 orig",
+          ],
+        slice_post = [
+          "i:2 orig",
+          "new"
+          ],
+        todo_post = [
+          "",
+          "orig",
+          "new"
+          ],
+        preserve_line_numbers = True
         )
 
 

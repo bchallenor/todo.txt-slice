@@ -471,7 +471,7 @@ class BatchEditor:
 
   def __recover_task_ids(self, edited_tasks):
     recovered_edited_tasks = {}
-    next_id = len(self.tasks) + 1
+    next_id = self.max_id + 1
     for task in edited_tasks.values():
       id = None
       id_tag, task = task.pop_key_value_tag("i")
