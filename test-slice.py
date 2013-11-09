@@ -190,6 +190,14 @@ class SliceBasicTest(SliceTest):
         date_on_add = True
         )
 
+  def test_remove_task(self):
+    self.run_test(
+        todo0 = ["x"],
+        edit0 = ["i:1 x"],
+        edit1 = [],
+        todo1 = [],
+        )
+
   def test_edit_task(self):
     self.run_test(
         todo0 = ["a", "b"],
