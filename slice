@@ -448,15 +448,20 @@ class ReviewTaskFilter(TaskFilter):
   def apply(self, task):
     filtered_task = task
     filtered_task = filtered_task.set_priority(Priority(None, True))
+    filtered_task = filtered_task.set_create_date(None)
     return filtered_task
 
   def unapply(self, filtered_task, original_task):
     task = filtered_task
-    if task.priority.level:
-      if not task.complete_date:
-        task = task.set_create_date(self.env.default_create_date)
+
+    if task.priority.level or task.complete_date:
+      # successful review; reset create_date to today if it's not completed already
+      task = task.set_create_date(self.env.today if not task.complete_date else original_task.create_date)
     else:
+      # failed review; restore create_date and priority
+      task = task.set_create_date(original_task.create_date)
       task = task.set_priority(original_task.priority)
+
     return task
 
 

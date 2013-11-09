@@ -394,6 +394,71 @@ class SliceMatchTest(SliceTest):
         )
 
 
+class SliceReviewTest(SliceTest):
+  filter_name = "review"
+
+  def test_reviewable_age(self):
+    self.run_test(
+        slice_review_intervals = "A:1",
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["(_) i:1 a"]
+        )
+
+  def test_not_reviewable_age(self):
+    self.run_test(
+        slice_review_intervals = "A:2",
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = []
+        )
+
+  def test_reviewable_by_priority(self):
+    self.run_test(
+        slice_review_intervals = "A:0,B:1",
+        todo0 = ["(A) 2000-01-01 a", "(B) 2000-01-01 b"],
+        edit0 = ["(_) i:1 a"]
+        )
+
+  def test_unprioritized_reviewable_next_day(self):
+    self.run_test(
+        todo0 = ["1999-12-31 a", "2000-01-01 b"],
+        edit0 = ["(_) i:1 a"]
+        )
+
+  def test_unconfigured_priorities_reviewable_same_day(self):
+    self.run_test(
+        slice_review_intervals = "A:1",
+        todo0 = ["(A) 2000-01-01 a", "(B) 2000-01-01 b"],
+        edit0 = ["(_) i:2 b"]
+        )
+
+  def test_set_complete_date_does_not_reset_create_date(self):
+    self.run_test(
+        slice_review_intervals = "A:1",
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["(_) i:1 a"],
+        edit1 = ["x 2000-01-01 (B) i:1 a"],
+        todo1 = ["x 2000-01-01 1999-12-31 a"],
+        )
+
+  def test_set_priority_and_not_complete_date_resets_create_date(self):
+    self.run_test(
+        slice_review_intervals = "A:1",
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["(_) i:1 a"],
+        edit1 = ["(B) i:1 a"],
+        todo1 = ["(B) 2000-01-01 a"],
+        )
+
+  def test_edits_preserved(self):
+    self.run_test(
+        slice_review_intervals = "A:1",
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["(_) i:1 a"],
+        edit1 = ["(_) i:1 b"],
+        todo1 = ["(A) 1999-12-31 b"],
+        )
+
+
 if __name__ == "__main__":
   unittest.main()
 
