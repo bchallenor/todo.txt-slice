@@ -118,10 +118,22 @@ class SliceTest(unittest.TestCase):
 class SliceMatchTest(SliceTest):
   filter_name = "match"
 
+  def test_no_tasks(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = []
+        )
+
   def test_single_task(self):
     self.run_test(
         todo0 = ["task"],
         edit0 = ["i:1 task"]
+        )
+
+  def test_tasks_sorted(self):
+    self.run_test(
+        todo0 = ["(C) c", "(B) b", "(A) a"],
+        edit0 = ["(A) i:3 a", "(B) i:2 b", "(C) i:1 c"]
         )
 
   def test_completed_tasks_hidden(self):
@@ -137,7 +149,63 @@ class SliceMatchTest(SliceTest):
         disable_filter = True
         )
 
+  def test_future_tasks_hidden(self):
+    self.run_test(
+        todo0 = ["past t:1999-12-31", "present t:2000-01-01", "future t:2000-01-02"],
+        edit0 = ["i:1 past t:1999-12-31", "i:2 present t:2000-01-01"]
+        )
+
+  def test_future_tasks_not_hidden(self):
+    self.run_test(
+        todo0 = ["past t:1999-12-31", "present t:2000-01-01", "future t:2000-01-02"],
+        edit0 = ["i:1 past t:1999-12-31", "i:2 present t:2000-01-01", "i:3 future t:2000-01-02"],
+        disable_filter = True
+        )
+
+  def test_insert_task(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x"],
+        todo1 = ["x"],
+        )
+
+  def test_insert_task_with_date(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x"],
+        todo1 = ["2000-01-01 x"],
+        date_on_add = True
+        )
+
+  def test_edit_task(self):
+    self.run_test(
+        todo0 = ["a", "b"],
+        edit0 = ["i:1 a", "i:2 b"],
+        edit1 = ["i:1 x", "i:2 b"],
+        todo1 = ["x", "b"],
+        )
+
   def test_empty_line_preserved(self):
+    self.run_test(
+        todo0 = ["", "orig"],
+        edit0 = ["i:2 orig"],
+        edit1 = ["i:2 orig"],
+        todo1 = ["", "orig"]
+        )
+
+  def test_empty_line_not_preserved(self):
+    self.run_test(
+        todo0 = ["", "orig"],
+        edit0 = ["i:2 orig"],
+        edit1 = ["i:2 orig"],
+        todo1 = ["orig"],
+        preserve_line_numbers = False
+        )
+
+  # regression test
+  def test_insert_task_empty_line_preserved(self):
     self.run_test(
         todo0 = ["", "orig"],
         edit0 = ["i:2 orig"],
@@ -145,13 +213,21 @@ class SliceMatchTest(SliceTest):
         todo1 = ["", "orig", "new"]
         )
 
-  def test_empty_line_not_preserved(self):
+  # regression test
+  def test_insert_task_empty_line_not_preserved(self):
     self.run_test(
         todo0 = ["", "orig"],
         edit0 = ["i:2 orig"],
         edit1 = ["i:2 orig", "new"],
         todo1 = ["orig", "new"],
         preserve_line_numbers = False
+        )
+
+  def test_canonicalizes_trailing_tag_order(self):
+    self.run_test(
+        todo0 = ["x +p1 @c1 k2:v @c2 +p2 k1:v"],
+        edit0 = ["i:1 x +p1 @c1 k2:v @c2 +p2 k1:v"],
+        todo1 = ["x @c1 @c2 +p1 +p2 k1:v k2:v"]
         )
 
 
