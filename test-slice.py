@@ -230,6 +230,13 @@ class SliceBasicTest(SliceTest):
         todo1 = ["x @c1 @c2 +p1 +p2 k1:v k2:v"]
         )
 
+  # regression test
+  def test_url_is_not_considered_tag(self):
+    self.run_test(
+        todo0 = ["http://example.com @c"],
+        edit0 = ["i:1 http://example.com @c"]
+        )
+
 
 class SliceMatchTest(SliceTest):
   filter_name = "match"
