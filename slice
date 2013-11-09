@@ -395,24 +395,6 @@ class TaskFilter:
     raise NotImplementedError
 
 
-class InboxTaskFilter(TaskFilter):
-  def __init__(self, env):
-    TaskFilter.__init__(self, env)
-
-  def matches(self, task):
-    return not task.priority.level or (task.start_date and task.start_date <= self.env.today) # todo: add more rules
-
-  def apply(self, task):
-    filtered_task = task
-    filtered_task = filtered_task.set_create_date(None)
-    return filtered_task
-
-  def unapply(self, filtered_task, original_task):
-    task = filtered_task
-    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
-    return task
-
-
 class MatchTaskFilter(TaskFilter):
   def __init__(self, env, priority = None, tags = set()):
     TaskFilter.__init__(self, env)
@@ -578,11 +560,6 @@ def usage():
   print("    all")
   print("      Opens all (unhidden) tasks.")
   print()
-  print("    inbox")
-  print("      Opens 'inbox' tasks. Your 'inbox' includes:")
-  print("      - tasks without priorities")
-  print("      - tasks with a start date (t:<date>) that has expired (today or in the past)")
-  print()
   print("    match [PRIORITY] [TAG...]")
   print("      Opens tasks matching PRIORITY and/or TAG(s).")
   print("      PRIORITY and TAG(s) will be automatically applied to all edited tasks.")
@@ -618,10 +595,6 @@ def usage():
   print("      Note: The default interval is 0, so unconfigured priorities (e.g. 'D' above)")
   print("            will _never_ escape review.")
   print()
-
-
-def build_inbox_filter(env, args):
-  return InboxTaskFilter(env)
 
 
 def build_all_filter(env, args):
@@ -695,7 +668,6 @@ def build_review_filter(env, args):
 def build_filter(env, name, args):
   filters = {
     "all": build_all_filter,
-    "inbox": build_inbox_filter,
     "match": build_match_filter,
     "review": build_review_filter
   }
