@@ -385,13 +385,13 @@ class TaskFilter:
   def __init__(self, env):
     self.env = env
 
-  def matches(task):
+  def matches(self, task):
     raise NotImplementedError
 
-  def apply(task):
+  def apply(self, task):
     raise NotImplementedError
 
-  def unapply(filtered_task):
+  def unapply(self, filtered_task, original_task):
     raise NotImplementedError
 
 
