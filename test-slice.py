@@ -1,10 +1,29 @@
 #!/usr/bin/env python3
+from contextlib import contextmanager
 from datetime import date
 import imp
+import logging
 import os.path
 import unittest
 
 slice = imp.load_source("slice", "slice")
+
+
+@contextmanager
+def capture(log, level):
+  records = []
+
+  class MemoryHandler(logging.Handler):
+    def emit(self, record):
+      records.append(record)
+
+  h = MemoryHandler()
+  h.setLevel(level)
+  log.addHandler(h)
+
+  yield records
+
+  log.removeHandler(h)
 
 
 class VirtualTempDir:
@@ -96,6 +115,7 @@ class AbstractSliceTest:
       self,
       slice_args = [],
       expect_clean_exit = True,
+      expect_warnings = False,
       todo0 = None,
       edit0 = None,
       edit1 = None,
@@ -127,7 +147,15 @@ class AbstractSliceTest:
         slice_review_intervals = slice_review_intervals
         )
 
-    slice.main(env, args)
+    with capture(logging.getLogger("slice"), logging.WARN) as warnings:
+
+      slice.main(env, args)
+
+      have_warnings = len(warnings) > 0
+      if expect_warnings:
+        self.assertTrue(have_warnings, "Expected warnings")
+      else:
+        self.assertFalse(have_warnings, msg = "Expected no warnings: %s" % warnings)
 
     env.assert_success()
 
@@ -163,6 +191,7 @@ class AbstractSliceTest:
         edit0 = [],
         edit1 = ["x t:1999-12-31 t:1999-12-31"],
         todo1 = ["x t:1999-12-31"],
+        expect_warnings = True
         )
 
   def test_multiple_start_dates(self):
@@ -171,6 +200,7 @@ class AbstractSliceTest:
         edit0 = [],
         edit1 = ["x t:1999-12-30 t:1999-12-31"],
         todo1 = ["x t:1999-12-30"],
+        expect_warnings = True
         )
 
   # regression test
@@ -187,7 +217,8 @@ class AbstractSliceTest:
         todo0 = [],
         edit0 = [],
         edit1 = ["i:42 x"],
-        todo1 = ["x"]
+        todo1 = ["x"],
+        expect_warnings = True
         )
 
   # regression test
@@ -196,7 +227,8 @@ class AbstractSliceTest:
         todo0 = [],
         edit0 = [],
         edit1 = ["i:foo x"],
-        todo1 = ["x"]
+        todo1 = ["x"],
+        expect_warnings = True
         )
 
 
@@ -321,7 +353,8 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
         todo0 = ["a"],
         edit0 = ["i:1 a"],
         edit1 = ["i:1 i:1 x"],
-        todo1 = ["x"]
+        todo1 = ["x"],
+        expect_warnings = True
         )
 
 
@@ -376,7 +409,8 @@ class SliceMatchTest(SliceAllTest):
         todo0 = ["(B) b"],
         edit0 = [],
         edit1 = ["i:1 a"],
-        todo1 = ["(B) b", "(A) a"]
+        todo1 = ["(B) b", "(A) a"],
+        expect_warnings = True
         )
 
   def test_insert_task_with_no_level_priority(self):

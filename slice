@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from datetime import date, datetime, timedelta
 import difflib
+import logging
 import os
 import re
 import string
@@ -8,9 +9,7 @@ import subprocess
 import sys
 import tempfile
 
-def log(str=""):
-  sys.stderr.write(str)
-  sys.stderr.write("\n")
+log = logging.getLogger(__name__)
 
 
 class ColorDiff:
@@ -337,7 +336,7 @@ class Task:
           tag_keys.add(token.key)
           tokens.append(token)
         else:
-          log("discarding duplicate tag: %s" % token)
+          log.warn("discarding duplicate tag: %s" % token)
       else:
         tokens.append(token)
 
@@ -374,22 +373,24 @@ class Task:
     return self.__parse_date(tag.value) if tag else None
 
   def get_key_value_tag(self, key):
-    tags = { tag for tag in self.tags if isinstance(tag, KeyValueTag) and tag.key == key }
+    # use self.tokens as it is a list, not a set, and thus will expose duplicates
+    tags = [tag for tag in self.tokens if isinstance(tag, KeyValueTag) and tag.key == key]
     if len(tags) == 0:
       return None
     tag = tags.pop()
     if len(tags) > 0:
-      log("ignoring duplicate tags: %s" % tags) # TODO: test
+      log.warn("ignoring duplicate tags: %s" % tags)
     return tag
 
   def pop_key_value_tag(self, key):
-    tags = { tag for tag in self.tags if isinstance(tag, KeyValueTag) and tag.key == key }
+    # use self.tokens as it is a list, not a set, and thus will expose duplicates
+    tags = [tag for tag in self.tokens if isinstance(tag, KeyValueTag) and tag.key == key]
     if len(tags) == 0:
       return None, self
-    task = self.remove_tags(tags)
+    task = self.remove_tags(set(tags))
     tag = tags.pop()
     if len(tags) > 0:
-      log("discarding duplicate tags: %s" % tags) # TODO: test
+      log.warn("discarding duplicate tags: %s" % tags)
     return tag, task
 
   def set_priority(self, priority):
@@ -545,9 +546,9 @@ class SliceEditor:
           if tmpid in self.editable_tasks: # safety check
             id = tmpid
           else:
-            log("ignoring unknown id: %s" % id_tag)
+            log.warn("ignoring unknown id: %s" % id_tag)
         except ValueError:
-          log("ignoring invalid id: %s" % id_tag)
+          log.warn("ignoring invalid id: %s" % id_tag)
       if id is None:
         id = next_id
         next_id += 1
@@ -685,8 +686,7 @@ def build_review_slice(env, args):
   for priority_interval_str in priority_interval_strs:
     pair = priority_interval_str.split(":")
     if len(pair) != 2:
-      log("Error parsing %s='%s': expected <priority>:<interval> pairs separated by commas" % (key, value))
-      log()
+      log.warn("Error parsing %s='%s': expected <priority>:<interval> pairs separated by commas" % (key, value))
       usage()
       sys.exit(1)
 
@@ -695,16 +695,14 @@ def build_review_slice(env, args):
     try:
       priority = Priority.parse("(%s)" % priority_level)
     except ValueError:
-      log("Error parsing %s='%s': %s is not a priority" % (key, value, priority_level))
-      log()
+      log.warn("Error parsing %s='%s': %s is not a priority" % (key, value, priority_level))
       usage()
       sys.exit(1)
 
     try:
       interval = int(interval_str)
     except ValueError:
-      log("Error parsing %s='%s': %s is not an integer" % (key, value, interval_str))
-      log()
+      log.warn("Error parsing %s='%s': %s is not an integer" % (key, value, interval_str))
       usage()
       sys.exit(1)
 
@@ -765,5 +763,8 @@ def main(env, args):
 
 
 if __name__ == "__main__":
+  h = logging.StreamHandler(sys.stderr)
+  h.setLevel(logging.WARN)
+  log.addHandler(h)
   main(TodoEnv(), sys.argv)
 
