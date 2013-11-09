@@ -388,6 +388,9 @@ class TaskSlice:
   def matches(self, task):
     raise NotImplementedError
 
+  def sort_key(self, task):
+    return task.line
+
   def apply(self, task):
     raise NotImplementedError
 
@@ -467,7 +470,7 @@ class SliceEditor:
     self.max_id = max(tasks.keys()) if len(tasks) > 0 else 0
     self.max_id_len = len(str(self.max_id))
     self.editable_tasks = self.__get_editable_tasks(tasks, task_slice, self.max_id_len)
-    self.sorted_editable_tasks = Task.sorted(self.editable_tasks)
+    self.sorted_editable_tasks = Task.sorted(self.editable_tasks, key = self.task_slice.sort_key)
 
   def __get_editable_tasks(self, tasks, task_slice, max_id_len):
     editable_tasks = {}
