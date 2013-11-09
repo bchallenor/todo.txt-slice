@@ -564,6 +564,9 @@ def usage():
   print("    Note: The -t, -n and -x options of todo.sh are supported.")
   print("          These should be placed before 'slice'.")
   print()
+  print("    all")
+  print("      Opens all (unhidden) tasks.")
+  print()
   print("    inbox")
   print("      Opens 'inbox' tasks. Your 'inbox' includes:")
   print("      - tasks without priorities")
@@ -598,6 +601,10 @@ def usage():
 
 def build_inbox_filter(env, args):
   return InboxTaskFilter(env)
+
+
+def build_all_filter(env, args):
+  return MatchTaskFilter(env)
 
 
 def build_match_filter(env, args):
@@ -669,6 +676,7 @@ def build_review_filter(env, args):
 
 def build_filter(env, name, args):
   filters = {
+    "all": build_all_filter,
     "inbox": build_inbox_filter,
     "match": build_match_filter,
     "review": build_review_filter

@@ -129,8 +129,8 @@ class SliceTest(unittest.TestCase):
     env.assert_success()
 
 
-class SliceBasicTest(SliceTest):
-  filter_name = "match"
+class SliceAllTest(SliceTest):
+  filter_name = "all"
 
   def test_no_tasks(self):
     self.run_test(
@@ -303,7 +303,7 @@ class SliceBasicTest(SliceTest):
         )
 
 
-class SliceMatchTest(SliceTest):
+class SliceMatchTest(SliceAllTest):
   filter_name = "match"
 
   def test_match_task_with_priority(self):
