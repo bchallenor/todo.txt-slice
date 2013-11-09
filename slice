@@ -374,6 +374,12 @@ class Task:
   def set_create_date(self, create_date):
     return Task(self.title, self.priority, create_date, self.complete_date)
 
+  def set_start_date(self, start_date):
+    _, task = self.pop_key_value_tag("t")
+    if start_date:
+      task = task.add_tags({KeyValueTag("t", start_date.isoformat())})
+    return task
+
 
 class TaskFilter:
   def __init__(self, env):
@@ -441,6 +447,9 @@ class ReviewTaskFilter(TaskFilter):
     if not task.create_date:
       return True
 
+    if task.start_date and task.start_date <= self.env.today:
+      return True
+
     age = self.env.today - task.create_date
     interval = self.priority_to_interval[task.priority]
     return age >= interval
@@ -458,6 +467,8 @@ class ReviewTaskFilter(TaskFilter):
       # successful review; reset create_date to today if it's not completed already
       task = task.set_create_date(self.env.today if not task.complete_date else original_task.create_date)
       task = task.set_priority(task.priority if task.priority.level else original_task.priority)
+      if task.start_date and task.start_date <= self.env.today:
+        task = task.set_start_date(None)
     else:
       # failed review; restore create_date and priority
       task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
@@ -482,7 +493,7 @@ class BatchEditor:
       if (not task.is_hidden(self.env.today) or self.env.disable_filter) and task_filter.matches(task):
         id_tag = KeyValueTag("i", str(id).zfill(max_id_len))
         editable_task = task_filter.apply(task)
-        editable_task = editable_task.add_tags(set([id_tag]), prepend = True)
+        editable_task = editable_task.add_tags({id_tag}, prepend = True)
         editable_tasks[id] = editable_task
     return editable_tasks
 
@@ -583,7 +594,15 @@ def usage():
   print("      If neither PRIORITY nor TAG(s) are supplied, all tasks will be matched.")
   print()
   print("    review")
-  print("      Opens tasks for review after they have reached a certain age.")
+  print("      Opens tasks for review:")
+  print("      - after they have reached a certain age (depends on the priority - see below)")
+  print("      - when their start date (t:<date>) expires")
+  print("      - if they don't have a creation date")
+  print()
+  print("      Reviews can be dismissed by setting a new priority, setting a start date in the")
+  print("      future, or completing the task.")
+  print()
+  print("      After review the task will have its creation date reset to the current date.")
   print()
   print("      The review age for each priority is defined in TODOTXT_SLICE_REVIEW_INTERVALS,")
   print("      which should consist of <priority>:<interval> pairs separated by commas.")

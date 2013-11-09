@@ -435,12 +435,28 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         edit0 = ["(_) i:2 b"]
         )
 
+  def test_reviewable_by_start_date(self):
+    self.run_test(
+        slice_review_intervals = "_:5",
+        todo0 = ["1999-12-31 a t:2000-01-01", "1999-12-31 b t:2000-01-02"],
+        edit0 = ["(_) i:1 a t:2000-01-01"]
+        )
+
   def test_set_complete_date_does_not_reset_create_date(self):
     self.run_test(
         slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["(_) i:1 a"],
         edit1 = ["x 2000-01-01 (_) i:1 a"],
+        todo1 = ["x 2000-01-01 1999-12-31 a"],
+        )
+
+  def test_set_complete_date_clears_start_date(self):
+    self.run_test(
+        slice_review_intervals = "_:5",
+        todo0 = ["1999-12-31 a t:2000-01-01"],
+        edit0 = ["(_) i:1 a t:2000-01-01"],
+        edit1 = ["x 2000-01-01 (_) i:1 a t:2000-01-01"],
         todo1 = ["x 2000-01-01 1999-12-31 a"],
         )
 
@@ -453,12 +469,30 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         todo1 = ["(A) 2000-01-01 a t:2001-01-02"],
         )
 
+  def test_set_start_date_does_not_clear_start_date(self):
+    self.run_test(
+        slice_review_intervals = "_:5",
+        todo0 = ["1999-12-31 a t:2000-01-01"],
+        edit0 = ["(_) i:1 a t:2000-01-01"],
+        edit1 = ["(_) i:1 a t:2001-01-02"],
+        todo1 = ["2000-01-01 a t:2001-01-02"],
+        )
+
   def test_set_priority_resets_create_date(self):
     self.run_test(
         slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["(_) i:1 a"],
         edit1 = ["(B) i:1 a"],
+        todo1 = ["(B) 2000-01-01 a"],
+        )
+
+  def test_set_priority_clears_start_date(self):
+    self.run_test(
+        slice_review_intervals = "_:5",
+        todo0 = ["1999-12-31 a t:2000-01-01"],
+        edit0 = ["(_) i:1 a t:2000-01-01"],
+        edit1 = ["(B) i:1 a t:2000-01-01"],
         todo1 = ["(B) 2000-01-01 a"],
         )
 
