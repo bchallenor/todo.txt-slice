@@ -27,7 +27,7 @@ class VirtualTodoEnv(unittest.TestCase):
   todo_file_path = os.path.join(todo_dir_path, todo_file_name)
   today = date(2000, 1, 1)
 
-  def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, date_on_add, preserve_line_numbers, disable_filter):
+  def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, date_on_add, preserve_line_numbers, disable_filter, slice_review_intervals):
     unittest.TestCase.__init__(self)
 
     self.expect_clean_exit = expect_clean_exit
@@ -45,6 +45,7 @@ class VirtualTodoEnv(unittest.TestCase):
     self.default_create_date = self.today if date_on_add else None
     self.preserve_line_numbers = preserve_line_numbers
     self.disable_filter = disable_filter
+    self.slice_review_intervals = slice_review_intervals
 
   def read_lines(self, path):
     if path == self.todo_file_path:
@@ -98,7 +99,8 @@ class SliceTest(unittest.TestCase):
       todo1 = None,
       date_on_add = False,
       preserve_line_numbers = True,
-      disable_filter = False
+      disable_filter = False,
+      slice_review_intervals = ""
       ):
 
     args = ["dummy.py"]
@@ -118,7 +120,8 @@ class SliceTest(unittest.TestCase):
         todo1 = todo1 if todo1 is not None else todo0,
         date_on_add = date_on_add,
         preserve_line_numbers = preserve_line_numbers,
-        disable_filter = disable_filter
+        disable_filter = disable_filter,
+        slice_review_intervals = slice_review_intervals
         )
 
     slice.main(env, args)

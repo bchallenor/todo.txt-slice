@@ -619,7 +619,8 @@ def build_match_filter(env, args):
 def build_review_filter(env, args):
   priority_to_interval = {}
 
-  for priority_interval_str in env.slice_review_intervals.split(","):
+  priority_interval_strs = env.slice_review_intervals.split(",") if len(env.slice_review_intervals) > 0 else []
+  for priority_interval_str in priority_interval_strs:
     pair = priority_interval_str.split(":")
     if len(pair) != 2:
       log("Error parsing %s='%s': expected <priority>:<interval> pairs separated by commas" % (key, value))
