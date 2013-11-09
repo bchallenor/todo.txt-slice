@@ -115,7 +115,7 @@ class SliceTest(unittest.TestCase):
       env.assert_success()
 
 
-class SliceMatchTest(SliceTest):
+class SliceBasicTest(SliceTest):
   filter_name = "match"
 
   def test_no_tasks(self):
@@ -228,6 +228,56 @@ class SliceMatchTest(SliceTest):
         todo0 = ["x +p1 @c1 k2:v @c2 +p2 k1:v"],
         edit0 = ["i:1 x +p1 @c1 k2:v @c2 +p2 k1:v"],
         todo1 = ["x @c1 @c2 +p1 +p2 k1:v k2:v"]
+        )
+
+
+class SliceMatchTest(SliceTest):
+  filter_name = "match"
+
+  def test_match_task_with_priority(self):
+    self.run_test(
+        filter_args = ["A"],
+        todo0 = ["x", "(A) a"],
+        edit0 = ["i:2 a"]
+        )
+
+  def test_match_task_with_context(self):
+    self.run_test(
+        filter_args = ["@c"],
+        todo0 = ["x", "a @c"],
+        edit0 = ["i:2 a"]
+        )
+
+  def test_match_task_with_project(self):
+    self.run_test(
+        filter_args = ["+p"],
+        todo0 = ["x", "a +p"],
+        edit0 = ["i:2 a"]
+        )
+
+  def test_match_task_with_kv(self):
+    self.run_test(
+        filter_args = ["k:v"],
+        todo0 = ["x", "a k:v"],
+        edit0 = ["i:2 a"]
+        )
+
+  def test_insert_task_with_multiple(self):
+    self.run_test(
+        filter_args = ["A", "@c", "+p", "k:v"],
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["y"],
+        todo1 = ["(A) y @c +p k:v"]
+        )
+
+  def test_edit_task_with_multiple(self):
+    self.run_test(
+        filter_args = ["A", "@c", "+p", "k:v"],
+        todo0 = ["x", "(A) a @c +p k:v", "(A) a +q"],
+        edit0 = ["i:2 a"],
+        edit1 = ["i:2 y"],
+        todo1 = ["x", "(A) y @c +p k:v", "(A) a +q"]
         )
 
 
