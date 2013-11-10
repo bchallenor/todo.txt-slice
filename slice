@@ -371,10 +371,31 @@ class Task:
   def is_hidden(self, date):
     return self.complete_date or (self.start_date and self.start_date > date)
 
+  def normalize(self, date):
+    task = self
+
+    priority = task.priority if not task.complete_date else Priority(None)
+    task = task.set_priority(priority.normalize(explicit_no_level = False))
+
+    task = task.remove_duplicate_tags()
+
+    if task.start_date and task.start_date <= date:
+      task = task.set_start_date(None)
+
+    # do this after all other tag operations, inc. setting start date (which is a tag)
+    task = task.normalize_tag_order()
+
+    return task
+
+  def normalize_tag_order(self):
+    tokens = self.tokens
+    tokens = Tag.sort_edge_tags(tokens, trailing = False)
+    tokens = Tag.sort_edge_tags(tokens, trailing = True)
+    return Task(Tag.join_tokens(tokens), self.priority, self.create_date, self.complete_date)
+
   def remove_tags(self, tags):
     tokens = [token for token in self.tokens if token not in tags]
-    title = "".join([str(token) for token in tokens]).strip()
-    return Task(title, self.priority, self.create_date, self.complete_date)
+    return Task(Tag.join_tokens(tokens), self.priority, self.create_date, self.complete_date)
 
   def remove_duplicate_tags(self):
     tag_keys = set()
@@ -390,33 +411,13 @@ class Task:
       else:
         tokens.append(token)
 
-    title = "".join([str(token) for token in tokens]).strip()
-    return Task(title, self.priority, self.create_date, self.complete_date)
+    return Task(Tag.join_tokens(tokens), self.priority, self.create_date, self.complete_date)
 
-  # canonicalizes the order of tags at the edge of the title so that different slices make idempotent edits
-  def add_tags(self, tags, prepend = False):
-    # the "edge" is the start if prepend is true, else the end
-    # split tokens into "tags at the edge", and whatever remains
-    edge_tags = set()
-    edge_pos = 0 if prepend else -1
-    rem_tokens = self.tokens[:]
-    while len(rem_tokens) > 0:
-      token = rem_tokens[edge_pos]
-      if isinstance(token, Tag):
-        edge_tags.add(token)
-      else:
-        assert isinstance(token, str) and len(token) > 0, "Expected non-Tag token to be a non-empty string: %s" % token
-        if not token.isspace():
-          # no longer at edge
-          break
-      rem_tokens.pop(edge_pos)
-
-    # join the remaining tokens, then _sort_ and add edge tokens
-    title = "".join([str(token) for token in rem_tokens]).strip()
-    edge = " ".join([str(tag) for tag in sorted(edge_tags | (tags - self.tags), key = lambda tag: tag.sort_key())])
-    if len(edge) > 0:
-      title = edge + " " + title if prepend else title + " " + edge
-    return Task(title, self.priority, self.create_date, self.complete_date)
+  def add_tags(self, tags, trailing = True):
+    tag_keys = { tag.key for tag in tags }
+    rem_tokens = [token for token in self.tokens if not isinstance(token, Tag) or token.key not in tag_keys]
+    tokens = rem_tokens + list(tags) if trailing else list(tags) + rem_tokens
+    return Task(Tag.join_tokens(tokens), self.priority, self.create_date, self.complete_date)
 
   def get_key_value_date(self, key):
     tag = self.get_key_value_tag(key)
@@ -554,8 +555,6 @@ class ReviewTaskSlice(TaskSlice):
       # successful review; reset create_date to today if it's not completed already
       task = task.set_create_date(self.env.today if not task.complete_date else original_task.create_date)
       task = task.set_priority(task.priority if task.priority.level else original_task.priority)
-      if task.start_date and task.start_date <= self.env.today:
-        task = task.set_start_date(None)
     else:
       # failed review; restore create_date and priority
       task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
@@ -580,7 +579,7 @@ class SliceEditor:
       if not task_slice.hidden(task) and task_slice.matches(task):
         id_tag = KeyValueTag("i", str(id).zfill(max_id_len))
         editable_task = task_slice.apply(task)
-        editable_task = editable_task.add_tags({id_tag}, prepend = True)
+        editable_task = editable_task.add_tags({id_tag}, trailing = False)
         editable_tasks[id] = editable_task
     return editable_tasks
 
@@ -617,14 +616,13 @@ class SliceEditor:
     for id, edited_task in recovered_edited_tasks.items():
       existing_task = merged_tasks[id] if id in merged_tasks else None
 
-      # clean up the user's input before unapplying the slice
-      edited_task = edited_task.remove_duplicate_tags()
       task = self.task_slice.unapply(edited_task, existing_task)
 
-      priority = task.priority if not task.complete_date else Priority(None)
-      task = task.set_priority(priority.normalize(explicit_no_level = False))
+      # normalize tag order etc
+      task = task.normalize(self.env.today)
 
-      if existing_task != task:
+      # but don't write changes that are only due to normalization
+      if existing_task is None or task != existing_task.normalize(self.env.today):
         self.env.print_diff(id, self.max_id_len, existing_task, task)
         merged_tasks[id] = task
 

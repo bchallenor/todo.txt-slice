@@ -259,26 +259,84 @@ class AbstractSliceTest:
         date_on_add = True
         )
 
-  def test_duplicate_start_dates(self):
+  def test_leading_tag_order_normalized(self):
     self.run_test(
         todo0 = [],
         edit0 = [],
-        edit1 = ["x t:1999-12-31 t:1999-12-31"],
-        todo1 = ["x t:1999-12-31"],
+        edit1 = ["k:v +p @c x"],
+        todo1 = ["@c +p k:v x"],
+        )
+
+  def test_trailing_tag_order_normalized(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x +p @c k:v"],
+        todo1 = ["x @c +p k:v"],
+        )
+
+  def test_intermediate_tag_order_not_normalized(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x +p @c k:v y"],
+        todo1 = ["x +p @c k:v y"],
+        )
+
+  def test_duplicate_contexts_normalized(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x @c @c"],
+        todo1 = ["x @c"],
         expect_warnings = True
         )
 
-  def test_multiple_start_dates(self):
+  def test_duplicate_projects_normalized(self):
     self.run_test(
         todo0 = [],
         edit0 = [],
-        edit1 = ["x t:1999-12-30 t:1999-12-31"],
-        todo1 = ["x t:1999-12-30"],
+        edit1 = ["x +p +p"],
+        todo1 = ["x +p"],
         expect_warnings = True
+        )
+
+  def test_duplicate_key_value_tags_normalized(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x k:v1 k:v1"],
+        todo1 = ["x k:v1"],
+        expect_warnings = True
+        )
+
+  def test_conflicting_key_value_tags_normalized(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x k:v1 k:v2"],
+        todo1 = ["x k:v1"],
+        expect_warnings = True
+        )
+
+  def test_redundant_start_date_normalized(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["past t:1999-12-31", "present t:2000-01-01", "future t:2000-01-02"],
+        todo1 = ["past", "present", "future t:2000-01-02"],
+        )
+
+  def test_completed_with_priority_normalized(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x 2000-01-01 (A) complete"],
+        todo1 = ["x 2000-01-01 complete"]
         )
 
   # regression test
-  def test_insert_task_with_explicit_no_level(self):
+  def test_explicit_no_level_normalized(self):
     self.run_test(
         todo0 = [],
         edit0 = [],
@@ -408,11 +466,32 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
         preserve_line_numbers = False
         )
 
-  def test_canonicalizes_trailing_tag_order(self):
+  def test_leading_tag_order_not_normalized_if_no_other_edits(self):
     self.run_test(
-        todo0 = ["x +p1 @c1 k2:v @c2 +p2 k1:v"],
-        edit0 = ["i:1 x +p1 @c1 k2:v @c2 +p2 k1:v"],
-        todo1 = ["x @c1 @c2 +p1 +p2 k1:v k2:v"]
+        todo0 = ["k:v +p @c x"],
+        edit0 = ["i:1 k:v +p @c x"],
+        )
+
+  def test_leading_tag_order_normalized_if_other_edits(self):
+    self.run_test(
+        todo0 = ["k:v +p @c x"],
+        edit0 = ["i:1 k:v +p @c x"],
+        edit1 = ["i:1 k:v +p @c y"],
+        todo1 = ["@c +p k:v y"],
+        )
+
+  def test_trailing_tag_order_not_normalized_if_no_other_edits(self):
+    self.run_test(
+        todo0 = ["x k:v +p @c"],
+        edit0 = ["i:1 x k:v +p @c"],
+        )
+
+  def test_trailing_tag_order_normalized_if_other_edits(self):
+    self.run_test(
+        todo0 = ["x k:v +p @c"],
+        edit0 = ["i:1 x k:v +p @c"],
+        edit1 = ["i:1 y k:v +p @c"],
+        todo1 = ["y @c +p k:v"],
         )
 
   # regression test
