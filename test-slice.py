@@ -31,6 +31,7 @@ def capture(log, level):
 
 
 class VirtualTodoEnv(unittest.TestCase):
+  __editor_path = "EDITOR"
   __todo_file_name = "todo.txt"
   __edit_dir_path = "EDIT"
   __edit_file_path = os.path.join(__edit_dir_path, __todo_file_name)
@@ -53,6 +54,7 @@ class VirtualTodoEnv(unittest.TestCase):
 
     self.todo_dir_path = lambda: self.__todo_dir_path
     self.todo_file_path = lambda: self.__todo_file_path
+    self.editor_path = lambda: self.__editor_path
     self.date_on_add = lambda: date_on_add
     self.default_create_date = lambda: self.today() if self.date_on_add() else None
     self.preserve_line_numbers = lambda: preserve_line_numbers
@@ -86,8 +88,9 @@ class VirtualTodoEnv(unittest.TestCase):
     yield self.__edit_dir_path
     self.__edit_dir_deleted = True
 
-  def launch_editor(self, path):
-    self.assertEqual(self.__edit_file_path, path)
+  def subprocess_check_call(self, path, args):
+    self.assertEqual(self.__editor_path, path)
+    self.assertEqual([self.__edit_file_path], args)
 
   def print_diff(self, id, max_id_len, task_a, task_b):
     self.assertLessEqual(len(str(id)), max_id_len, msg = "Expected id (%d) to have length <= %d" % (id, max_id_len))

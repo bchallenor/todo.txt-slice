@@ -81,8 +81,8 @@ class TodoEnv:
   def create_temp_dir(self):
     return tempfile.TemporaryDirectory()
 
-  def launch_editor(self, path):
-    subprocess.check_call([self.editor_path(), path])
+  def subprocess_check_call(self, path, args):
+    subprocess.check_call([path] + args)
 
   def print_diff(self, id, max_id_len, task_a, task_b):
     header = "%s " % str(id).zfill(max_id_len)
@@ -646,7 +646,7 @@ class SliceEditor:
     with self.env.create_temp_dir() as temp_dir_path:
       temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
       Task.save_all(self.env, tasks, temp_todo_path)
-      self.env.launch_editor(temp_todo_path)
+      self.env.subprocess_check_call(self.env.editor_path(), [temp_todo_path])
       return Task.load_all(self.env, temp_todo_path)
 
   def edit_and_merge(self):
