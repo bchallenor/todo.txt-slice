@@ -508,6 +508,15 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         todo1 = ["(A) 1999-12-31 b"],
         )
 
+  # regression test
+  def test_insert_hidden_sets_create_date(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["a t:2000-01-02"],
+        todo1 = ["2000-01-01 a t:2000-01-02"],
+        )
+
 
 class SliceFutureTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "future"

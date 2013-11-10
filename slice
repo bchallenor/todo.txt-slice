@@ -485,8 +485,8 @@ class ReviewTaskSlice(TaskSlice):
 
     if task.priority.level or task.is_hidden(self.env.today):
       # successful review; reset create_date to today if it's not completed already
-      task = task.set_create_date(self.env.today if not task.complete_date else original_task.create_date)
-      task = task.set_priority(task.priority if task.priority.level else original_task.priority)
+      task = task.set_create_date(self.env.today if not task.complete_date else original_task.create_date if original_task else self.env.default_create_date)
+      task = task.set_priority(task.priority if task.priority.level else original_task.priority if original_task else Priority(None))
       if task.start_date and task.start_date <= self.env.today:
         task = task.set_start_date(None)
     else:
