@@ -633,12 +633,23 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         )
 
   # regression test
-  def test_insert_hidden_sets_create_date(self):
+  def test_insert_hidden(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["a t:2000-01-02"],
+        todo1 = ["a t:2000-01-02"],
+        date_on_add = False
+        )
+
+  # regression test
+  def test_insert_hidden_with_date(self):
     self.run_test(
         todo0 = [],
         edit0 = [],
         edit1 = ["a t:2000-01-02"],
         todo1 = ["2000-01-01 a t:2000-01-02"],
+        date_on_add = True
         )
 
 
