@@ -72,8 +72,8 @@ class TodoEnv:
   def launch_editor(self, path):
     subprocess.check_call([self.editor_path, path])
 
-  def print_diff(self, id, task_a, task_b):
-    header = "%s " % str(id).zfill(self.max_id_len)
+  def print_diff(self, id, max_id_len, task_a, task_b):
+    header = "%s " % str(id).zfill(max_id_len)
     log_a = task_a.line if task_a else ""
     log_b = task_b.line if task_b else ""
     ColorDiff.diff(header, log_a, log_b)
@@ -561,7 +561,7 @@ class SliceEditor:
 
     for id in self.editable_tasks.keys() - recovered_edited_tasks.keys():
       existing_task = merged_tasks[id]
-      self.env.print_diff(id, existing_task, None)
+      self.env.print_diff(id, self.max_id_len, existing_task, None)
       del merged_tasks[id]
 
     for id, edited_task in recovered_edited_tasks.items():
@@ -575,7 +575,7 @@ class SliceEditor:
       task = task.set_priority(priority.normalize(explicit_no_level = False))
 
       if existing_task != task:
-        self.env.print_diff(id, existing_task, task)
+        self.env.print_diff(id, self.max_id_len, existing_task, task)
         merged_tasks[id] = task
 
     return merged_tasks

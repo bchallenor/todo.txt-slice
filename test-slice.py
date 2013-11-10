@@ -90,7 +90,8 @@ class VirtualTodoEnv(unittest.TestCase):
   def launch_editor(self, path):
     self.assertEqual(self.__edit_file_path, path)
 
-  def print_diff(self, id, task_a, task_b):
+  def print_diff(self, id, max_id_len, task_a, task_b):
+    self.assertLessEqual(len(str(id)), max_id_len, msg = "Expected id (%d) to have length <= %d" % (id, max_id_len))
     self.assertNotEqual(task_a, task_b)
 
   def assert_success(self):
