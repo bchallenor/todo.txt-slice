@@ -7,6 +7,8 @@ import os.path
 import unittest
 
 slice = imp.load_source("slice", "slice")
+Tag = slice.Tag
+ContextTag = slice.ContextTag
 
 
 @contextmanager
@@ -107,6 +109,44 @@ class VirtualTodoEnv(unittest.TestCase):
       self.assertFalse(self.__edit_dir.clean_exit, msg = "Expected edit directory to be untouched")
       self.assertFalse(self.__edit_file_path_written, msg = "Expected edit file to be untouched")
       self.assertFalse(self.__todo_file_path_written, msg = "Expected todo file to be untouched")
+
+
+class TagTest(unittest.TestCase):
+  def test_join_tokens(self):
+    a = ContextTag("a")
+    b = ContextTag("b")
+
+    # trivial cases
+    self.__test_join_tokens([], "")
+    self.__test_join_tokens([" "], "")
+    self.__test_join_tokens(["\t"], "")
+    self.__test_join_tokens(["x"], "x")
+    self.__test_join_tokens([a], "@a")
+
+    # one token supplies whitespace - simple join
+    self.__test_join_tokens(["x", "\ty"], "x\ty")
+    self.__test_join_tokens(["x\t", "y"], "x\ty")
+    self.__test_join_tokens([a, "\tx"], "@a\tx")
+    self.__test_join_tokens(["x\t", a], "x\t@a")
+
+    # no whitespace between tokens - space inserted
+    self.__test_join_tokens([a, "x"], "@a x")
+    self.__test_join_tokens(["x", a], "x @a")
+    self.__test_join_tokens(["x", "y"], "x y")
+    self.__test_join_tokens([a, b], "@a @b")
+
+    # both tokens supply whitespace - drop second
+    self.__test_join_tokens(["x ", "\ty"], "x y")
+    self.__test_join_tokens(["x\t", " y"], "x\ty")
+
+    # three tokens
+    self.__test_join_tokens(["x", "\t", "y"], "x\ty")
+    self.__test_join_tokens(["x\t", " ", " y"], "x\ty")
+    self.__test_join_tokens([a, "\t", b], "@a\t@b")
+
+  def __test_join_tokens(self, tokens, expected):
+    result = Tag.join_tokens(tokens)
+    self.assertEqual(expected, result, msg = "Expected Tag.join_tokens(%s) to equal '%s'" % (tokens, expected))
 
 
 class AbstractSliceTest:

@@ -181,6 +181,34 @@ class Tag:
 
     return tokens
 
+  # joins the given tokens
+  # where there are two adjacent tokens with no intermediate whitespace, a space is inserted
+  # where there are two adjacent tokens and both supply whitespace, the second whitespace is dropped
+  # leading and trailing whitespace is removed
+  @classmethod
+  def join_tokens(cls, tokens):
+    str_tokens = []
+    preceding_space = True
+
+    for token in tokens:
+      if isinstance(token, Tag):
+        start_space = False
+        end_space = False
+        str_token = str(token)
+      else:
+        assert isinstance(token, str) and len(token) > 0, "Expected non-Tag token to be a non-empty string: %s" % token
+        start_space = token[0].isspace()
+        end_space = token[-1].isspace()
+        str_token = token.lstrip() if preceding_space else token
+
+      if not preceding_space and not start_space:
+        str_tokens.append(" ")
+      str_tokens.append(str_token)
+
+      preceding_space = end_space
+
+    return "".join(str_tokens).rstrip()
+
   def sort_key(self):
     raise NotImplementedError
 
