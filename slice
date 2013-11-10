@@ -323,11 +323,8 @@ class Task:
     return self.complete_date or (self.start_date and self.start_date > date)
 
   def remove_tags(self, tags):
-    title = self.title
-    for tag in tags & self.tags:
-      title = title.replace(" " + tag.raw, "")
-      title = title.replace(tag.raw + " ", "")
-      title = title.replace(   tag.raw   , "")
+    tokens = [token for token in self.tokens if token not in tags]
+    title = "".join([str(token) for token in tokens]).strip()
     return Task(title, self.priority, self.create_date, self.complete_date)
 
   def remove_duplicate_tags(self):
