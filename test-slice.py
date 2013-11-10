@@ -30,18 +30,6 @@ def capture(log, level):
   log.removeHandler(h)
 
 
-class VirtualTempDir:
-  def __init__(self, path):
-    self.__path = path
-    self.clean_exit = False
-
-  def __enter__(self):
-    return self.__path
-
-  def __exit__(self, exc_type, exc_value, traceback):
-    self.clean_exit = exc_type is None
-
-
 class VirtualTodoEnv(unittest.TestCase):
   todo_file_name = "todo.txt"
   __edit_dir_path = "EDIT"
@@ -60,7 +48,7 @@ class VirtualTodoEnv(unittest.TestCase):
     self.__edit1 = edit1
     self.__todo1 = todo1
 
-    self.__edit_dir = VirtualTempDir(self.__edit_dir_path)
+    self.__edit_dir_deleted = False
     self.__edit_file_path_written = False
     self.__todo_file_path_written = False
 
@@ -88,8 +76,11 @@ class VirtualTodoEnv(unittest.TestCase):
     else:
       self.fail("attempt to write unknown path: %s" % path)
 
+  @contextmanager
   def create_temp_dir(self):
-    return self.__edit_dir
+    self.__edit_dir_deleted = False
+    yield self.__edit_dir_path
+    self.__edit_dir_deleted = True
 
   def launch_editor(self, path):
     self.assertEqual(self.__edit_file_path, path)
@@ -100,7 +91,7 @@ class VirtualTodoEnv(unittest.TestCase):
 
   def assert_success(self):
     if self.expect_clean_exit:
-      self.assertTrue(self.__edit_dir.clean_exit, msg = "Expected edit directory to be used and cleaned up")
+      self.assertTrue(self.__edit_dir_deleted, msg = "Expected edit directory to be used and cleaned up")
       self.assertTrue(self.__edit_file_path_written, msg = "Expected edit file to be written")
       changes = self.__todo0 != self.__todo1
       if changes:
