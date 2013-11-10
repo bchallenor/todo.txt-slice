@@ -220,7 +220,7 @@ class AbstractSliceTest:
       if expect_warnings:
         self.assertTrue(have_warnings, "Expected warnings")
       else:
-        self.assertFalse(have_warnings, msg = "Expected no warnings: %s" % warnings)
+        self.assertFalse(have_warnings, msg = "Expected no warnings: %s" % [w.getMessage() for w in warnings])
 
     env.assert_success()
 
