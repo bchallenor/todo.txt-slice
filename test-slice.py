@@ -9,6 +9,8 @@ import unittest
 slice = imp.load_source("slice", "slice")
 Tag = slice.Tag
 ContextTag = slice.ContextTag
+ProjectTag = slice.ProjectTag
+KeyValueTag = slice.KeyValueTag
 
 
 @contextmanager
@@ -147,6 +149,37 @@ class TagTest(unittest.TestCase):
   def __test_join_tokens(self, tokens, expected):
     result = Tag.join_tokens(tokens)
     self.assertEqual(expected, result, msg = "Expected Tag.join_tokens(%s) to equal '%s'" % (tokens, expected))
+
+  def test_sort_edge_tags(self):
+    c = ContextTag("c")
+    p = ProjectTag("p")
+    kv = KeyValueTag("k", "v")
+
+    # trivial cases
+    self.__test_sort_edge_tags([], [], trailing = True)
+    self.__test_sort_edge_tags([], [], trailing = False)
+    self.__test_sort_edge_tags(["x"], ["x"], trailing = True)
+    self.__test_sort_edge_tags(["x"], ["x"], trailing = False)
+
+    # no string tokens
+    self.__test_sort_edge_tags([c], [c], trailing = True)
+    self.__test_sort_edge_tags([c], [c], trailing = False)
+
+    # correct sort order
+    self.__test_sort_edge_tags([p, kv, c], [c, p, kv], trailing = True)
+    self.__test_sort_edge_tags([p, kv, c], [c, p, kv], trailing = False)
+
+    # sorts at correct end
+    self.__test_sort_edge_tags([p, c, "x", p, c], [c, p, "x", p, c], trailing = False)
+    self.__test_sort_edge_tags([p, c, "x", p, c], [p, c, "x", c, p], trailing = True)
+
+    # sorts to first non-whitespace token
+    self.__test_sort_edge_tags([p, " ", c, "x"], [c, p, "x"], trailing = False)
+    self.__test_sort_edge_tags(["x", p, " ", c], ["x", c, p], trailing = True)
+
+  def __test_sort_edge_tags(self, tokens, expected, trailing):
+    result = Tag.sort_edge_tags(tokens, trailing)
+    self.assertEqual(expected, result, msg = "Expected Tag.sort_edge_tags(%s) to equal '%s'" % (tokens, expected))
 
 
 class AbstractSliceTest:

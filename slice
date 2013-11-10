@@ -209,6 +209,28 @@ class Tag:
 
     return "".join(str_tokens).rstrip()
 
+  # sorts the tags between the "edge" and the first non-whitespace token
+  # the "edge" is the start if trailing is false, else the end
+  @classmethod
+  def sort_edge_tags(cls, tokens, trailing):
+    # split tokens into "tags at the edge", and whatever remains
+    edge_tags = []
+    edge_pos = -1 if trailing else 0
+    rem_tokens = tokens[:]
+    while len(rem_tokens) > 0:
+      token = rem_tokens[edge_pos]
+      if isinstance(token, Tag):
+        edge_tags.append(token)
+      else:
+        assert isinstance(token, str) and len(token) > 0, "Expected non-Tag token to be a non-empty string: %s" % token
+        if not token.isspace():
+          # no longer at edge
+          break
+      rem_tokens.pop(edge_pos)
+
+    edge_tags.sort(key = lambda tag: tag.sort_key())
+    return rem_tokens + edge_tags if trailing else edge_tags + rem_tokens
+
   def sort_key(self):
     raise NotImplementedError
 
