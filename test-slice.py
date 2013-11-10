@@ -31,17 +31,16 @@ def capture(log, level):
 
 
 class VirtualTodoEnv(unittest.TestCase):
-  todo_file_name = "todo.txt"
+  __todo_file_name = "todo.txt"
   __edit_dir_path = "EDIT"
-  __edit_file_path = os.path.join(__edit_dir_path, todo_file_name)
-  todo_dir_path = "TODO"
-  todo_file_path = os.path.join(todo_dir_path, todo_file_name)
-  today = date(2000, 1, 1)
+  __edit_file_path = os.path.join(__edit_dir_path, __todo_file_name)
+  __todo_dir_path = "TODO"
+  __todo_file_path = os.path.join(__todo_dir_path, __todo_file_name)
 
   def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, date_on_add, preserve_line_numbers, disable_filter, slice_review_intervals):
     unittest.TestCase.__init__(self)
 
-    self.expect_clean_exit = expect_clean_exit
+    self.__expect_clean_exit = expect_clean_exit
 
     self.__todo0 = todo0
     self.__edit0 = edit0
@@ -52,14 +51,19 @@ class VirtualTodoEnv(unittest.TestCase):
     self.__edit_file_path_written = False
     self.__todo_file_path_written = False
 
-    self.date_on_add = date_on_add
-    self.default_create_date = self.today if date_on_add else None
-    self.preserve_line_numbers = preserve_line_numbers
-    self.disable_filter = disable_filter
-    self.slice_review_intervals = slice_review_intervals
+    self.todo_dir_path = lambda: self.__todo_dir_path
+    self.todo_file_path = lambda: self.__todo_file_path
+    self.date_on_add = lambda: date_on_add
+    self.default_create_date = lambda: self.today() if self.date_on_add() else None
+    self.preserve_line_numbers = lambda: preserve_line_numbers
+    self.disable_filter = lambda: disable_filter
+    self.slice_review_intervals = lambda: slice_review_intervals
+
+  def today(self):
+    return date(2000, 1, 1)
 
   def read_lines(self, path):
-    if path == self.todo_file_path:
+    if path == self.__todo_file_path:
       return self.__todo0
     elif path == self.__edit_file_path:
       return self.__edit1
@@ -67,7 +71,7 @@ class VirtualTodoEnv(unittest.TestCase):
       self.fail("attempt to read unknown path: %s" % path)
 
   def write_lines(self, path, lines):
-    if path == self.todo_file_path:
+    if path == self.__todo_file_path:
       self.assertEqual(self.__todo1, lines, msg = "Todo file content does not match expected content")
       self.__todo_file_path_written = True
     elif path == self.__edit_file_path:
@@ -90,7 +94,7 @@ class VirtualTodoEnv(unittest.TestCase):
     self.assertNotEqual(task_a, task_b)
 
   def assert_success(self):
-    if self.expect_clean_exit:
+    if self.__expect_clean_exit:
       self.assertTrue(self.__edit_dir_deleted, msg = "Expected edit directory to be used and cleaned up")
       self.assertTrue(self.__edit_file_path_written, msg = "Expected edit file to be written")
       changes = self.__todo0 != self.__todo1

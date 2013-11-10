@@ -44,17 +44,29 @@ class ColorDiff:
 # a thin shim between us and the real world
 # try to minimize what goes in here as it will not be tested
 class TodoEnv:
-  today = date.today()
-
   def __init__(self):
-    self.todo_dir_path = os.environ["TODO_DIR"]
-    self.todo_file_path = os.environ["TODO_FILE"]
-    self.editor_path = os.environ["EDITOR"]
-    self.date_on_add = os.environ["TODOTXT_DATE_ON_ADD"] == "1"
-    self.default_create_date = self.today if self.date_on_add else None
-    self.preserve_line_numbers = os.environ["TODOTXT_PRESERVE_LINE_NUMBERS"] == "1"
-    self.disable_filter = os.environ["TODOTXT_DISABLE_FILTER"] == "1"
-    self.slice_review_intervals = os.environ["TODOTXT_SLICE_REVIEW_INTERVALS"]
+    self.todo_dir_path = lambda: self.__environ("TODO_DIR")
+    self.todo_file_path = lambda: self.__environ("TODO_FILE")
+    self.editor_path = lambda: self.__environ("EDITOR")
+    self.date_on_add = lambda: self.__environ("TODOTXT_DATE_ON_ADD") == "1"
+    self.default_create_date = lambda: self.today() if self.date_on_add() else None
+    self.preserve_line_numbers = lambda: self.__environ("TODOTXT_PRESERVE_LINE_NUMBERS") == "1"
+    self.disable_filter = lambda: self.__environ("TODOTXT_DISABLE_FILTER") == "1"
+    self.slice_review_intervals = lambda: self.__environ("TODOTXT_SLICE_REVIEW_INTERVALS", default = "_:0,A:1,B:7,C:56,Z:182")
+
+  def __environ(self, key, default = None):
+    try:
+      return os.environ[key]
+    except KeyError:
+      if default is not None:
+        log.warn("Environment variable %s is not defined. Falling back to default: '%s'" % (key, default))
+        return default
+      else:
+        log.warn("Mandatory environment variable %s is not defined." % key)
+        sys.exit(1)
+
+  def today(self):
+    return date.today()
 
   def read_lines(self, path):
     with open(path, "r", encoding="utf-8") as f:
@@ -70,7 +82,7 @@ class TodoEnv:
     return tempfile.TemporaryDirectory()
 
   def launch_editor(self, path):
-    subprocess.check_call([self.editor_path, path])
+    subprocess.check_call([self.editor_path(), path])
 
   def print_diff(self, id, max_id_len, task_a, task_b):
     header = "%s " % str(id).zfill(max_id_len)
@@ -317,7 +329,7 @@ class Task:
       if id in tasks:
         task = tasks[id]
         lines.append(task.line)
-      elif env.preserve_line_numbers:
+      elif env.preserve_line_numbers():
         lines.append("")
     env.write_lines(path, lines)
 
@@ -462,7 +474,7 @@ class TaskSlice:
     self.env = env
 
   def hidden(self, task):
-    return task.is_hidden(self.env.today) and not self.env.disable_filter
+    return task.is_hidden(self.env.today()) and not self.env.disable_filter()
 
   def matches(self, task):
     raise NotImplementedError
@@ -482,10 +494,10 @@ class FutureTaskSlice(TaskSlice):
     TaskSlice.__init__(self, env)
 
   def hidden(self, task):
-    return task.complete_date and not self.env.disable_filter
+    return task.complete_date and not self.env.disable_filter()
 
   def matches(self, task):
-    return task.start_date and task.start_date > self.env.today
+    return task.start_date and task.start_date > self.env.today()
 
   def sort_key(self, task):
     return task.start_date
@@ -497,7 +509,7 @@ class FutureTaskSlice(TaskSlice):
 
   def unapply(self, sliced_task, original_task):
     task = sliced_task
-    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
+    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date())
     return task
 
 
@@ -519,7 +531,7 @@ class MatchTaskSlice(TaskSlice):
 
   def unapply(self, sliced_task, original_task):
     task = sliced_task
-    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
+    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date())
     if self.priority and not task.priority.level:
       task = task.set_priority(self.priority)
     task = task.add_tags(self.tags)
@@ -535,10 +547,10 @@ class ReviewTaskSlice(TaskSlice):
     if not task.create_date:
       return True
 
-    if task.start_date and task.start_date <= self.env.today:
+    if task.start_date and task.start_date <= self.env.today():
       return True
 
-    age = self.env.today - task.create_date
+    age = self.env.today() - task.create_date
     # unconfigured priorities will never escape the review
     interval = self.priority_to_interval[task.priority] if task.priority in self.priority_to_interval else timedelta(days = 0)
     return age >= interval
@@ -552,13 +564,13 @@ class ReviewTaskSlice(TaskSlice):
   def unapply(self, sliced_task, original_task):
     task = sliced_task
 
-    if original_task and (task.priority.level or task.is_hidden(self.env.today)):
+    if original_task and (task.priority.level or task.is_hidden(self.env.today())):
       # successful review; reset create_date to today if it's not completed already
-      task = task.set_create_date(self.env.today if not task.complete_date else original_task.create_date)
+      task = task.set_create_date(self.env.today() if not task.complete_date else original_task.create_date)
       task = task.set_priority(task.priority if task.priority.level else original_task.priority)
     else:
       # failed review; restore create_date and priority
-      task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date)
+      task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date())
       task = task.set_priority(original_task.priority if original_task else Priority(None))
 
     return task
@@ -620,10 +632,10 @@ class SliceEditor:
       task = self.task_slice.unapply(edited_task, existing_task)
 
       # normalize tag order etc
-      task = task.normalize(self.env.today)
+      task = task.normalize(self.env.today())
 
       # but don't write changes that are only due to normalization
-      if existing_task is None or task != existing_task.normalize(self.env.today):
+      if existing_task is None or task != existing_task.normalize(self.env.today()):
         self.env.print_diff(id, self.max_id_len, existing_task, task)
         merged_tasks[id] = task
 
@@ -731,7 +743,8 @@ def build_match_slice(env, args):
 def build_review_slice(env, args):
   priority_to_interval = {}
 
-  priority_interval_strs = env.slice_review_intervals.split(",") if len(env.slice_review_intervals) > 0 else []
+  slice_review_intervals = env.slice_review_intervals()
+  priority_interval_strs = slice_review_intervals.split(",") if len(slice_review_intervals) > 0 else []
   for priority_interval_str in priority_interval_strs:
     pair = priority_interval_str.split(":")
     if len(pair) != 2:
@@ -794,14 +807,14 @@ def main(env, args):
   slice_name = action_args[0]
   slice_args = action_args[1:]
 
-  tasks = Task.load_all(env, env.todo_file_path)
+  tasks = Task.load_all(env, env.todo_file_path())
 
   task_slice = build_slice(env, slice_name, slice_args)
   editor = SliceEditor(env, tasks, task_slice)
   merged_tasks = editor.edit_and_merge()
 
   if merged_tasks != tasks:
-    Task.save_all(env, merged_tasks, env.todo_file_path)
+    Task.save_all(env, merged_tasks, env.todo_file_path())
 
 
 if __name__ == "__main__":
