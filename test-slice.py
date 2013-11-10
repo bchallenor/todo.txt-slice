@@ -7,6 +7,7 @@ import os.path
 import unittest
 
 slice = imp.load_source("slice", "slice")
+AbstractTodoEnv = slice.AbstractTodoEnv
 Tag = slice.Tag
 ContextTag = slice.ContextTag
 ProjectTag = slice.ProjectTag
@@ -30,7 +31,7 @@ def capture(log, level):
   log.removeHandler(h)
 
 
-class VirtualTodoEnv(unittest.TestCase):
+class VirtualTodoEnv(AbstractTodoEnv, unittest.TestCase):
   __editor_path = "EDITOR"
   __todo_file_name = "todo.txt"
   __edit_dir_path = "EDIT"
@@ -38,7 +39,7 @@ class VirtualTodoEnv(unittest.TestCase):
   __todo_dir_path = "TODO"
   __todo_file_path = os.path.join(__todo_dir_path, __todo_file_name)
 
-  def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, date_on_add, preserve_line_numbers, disable_filter, slice_review_intervals):
+  def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, export, unset):
     unittest.TestCase.__init__(self)
 
     self.__expect_clean_exit = expect_clean_exit
@@ -52,14 +53,21 @@ class VirtualTodoEnv(unittest.TestCase):
     self.__edit_file_path_written = False
     self.__todo_file_path_written = False
 
-    self.todo_dir_path = lambda: self.__todo_dir_path
-    self.todo_file_path = lambda: self.__todo_file_path
-    self.editor_path = lambda: self.__editor_path
-    self.date_on_add = lambda: date_on_add
-    self.default_create_date = lambda: self.today() if self.date_on_add() else None
-    self.preserve_line_numbers = lambda: preserve_line_numbers
-    self.disable_filter = lambda: disable_filter
-    self.slice_review_intervals = lambda: slice_review_intervals
+    os_environ = {
+        "TODO_DIR": self.__todo_dir_path,
+        "TODO_FILE": self.__todo_file_path,
+        "EDITOR": self.__editor_path,
+        "TODOTXT_DATE_ON_ADD": "0",
+        "TODOTXT_PRESERVE_LINE_NUMBERS": "1",
+        "TODOTXT_DISABLE_FILTER": "0",
+        }
+
+    os_environ.update(export)
+
+    for key in unset:
+      del os_environ[key]
+
+    AbstractTodoEnv.__init__(self, os_environ)
 
   def today(self):
     return date(2000, 1, 1)
@@ -192,20 +200,18 @@ class AbstractSliceTest:
       edit0 = None,
       edit1 = None,
       todo1 = None,
-      date_on_add = False,
-      preserve_line_numbers = True,
-      disable_filter = False,
-      slice_review_intervals = ""
+      export = {},
+      unset = set()
       ):
 
     args = ["dummy.py"]
 
-    if self.action_name is not None:
-      args.append(self.action_name)
+    args.append(self.action_name)
+    args.append(self.slice_name)
+    args.extend(slice_args)
 
-      if self.slice_name is not None:
-        args.append(self.slice_name)
-        args.extend(slice_args)
+    export_with_defaults = self.export.copy()
+    export_with_defaults.update(export),
 
     env = VirtualTodoEnv(
         expect_clean_exit = expect_clean_exit,
@@ -213,10 +219,8 @@ class AbstractSliceTest:
         edit0 = edit0,
         edit1 = edit1 if edit1 is not None else edit0,
         todo1 = todo1 if todo1 is not None else todo0,
-        date_on_add = date_on_add,
-        preserve_line_numbers = preserve_line_numbers,
-        disable_filter = disable_filter,
-        slice_review_intervals = slice_review_intervals
+        export = export_with_defaults,
+        unset = unset
         )
 
     with capture(logging.getLogger("slice"), logging.WARN) as warnings:
@@ -254,7 +258,7 @@ class AbstractSliceTest:
         edit0 = [],
         edit1 = ["x"],
         todo1 = ["2000-01-01 x"],
-        date_on_add = True
+        export = {"TODOTXT_DATE_ON_ADD": "1"}
         )
 
   def test_leading_tag_order_normalized(self):
@@ -364,6 +368,7 @@ class AbstractSliceTest:
 
 class SliceAllTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "all"
+  export = {}
 
   def test_single_task(self):
     self.run_test(
@@ -387,7 +392,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
     self.run_test(
         todo0 = ["x 2000-01-01 done"],
         edit0 = ["x 2000-01-01 i:1 done"],
-        disable_filter = True
+        export = {"TODOTXT_DISABLE_FILTER": "1"}
         )
 
   def test_future_tasks_hidden(self):
@@ -400,7 +405,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
     self.run_test(
         todo0 = ["past t:1999-12-31", "present t:2000-01-01", "future t:2000-01-02"],
         edit0 = ["i:1 past t:1999-12-31", "i:2 present t:2000-01-01", "i:3 future t:2000-01-02"],
-        disable_filter = True
+        export = {"TODOTXT_DISABLE_FILTER": "1"}
         )
 
   def test_remove_task(self):
@@ -433,7 +438,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
         edit0 = ["i:2 orig"],
         edit1 = ["i:2 orig"],
         todo1 = ["", "orig"],
-        preserve_line_numbers = False
+        export = {"TODOTXT_PRESERVE_LINE_NUMBERS": "0"}
         )
 
   def test_empty_line_not_preserved_when_other_edits(self):
@@ -442,7 +447,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
         edit0 = ["i:2 orig"],
         edit1 = ["i:2 changed"],
         todo1 = ["changed"],
-        preserve_line_numbers = False
+        export = {"TODOTXT_PRESERVE_LINE_NUMBERS": "0"}
         )
 
   # regression test
@@ -461,7 +466,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
         edit0 = ["i:2 orig"],
         edit1 = ["i:2 orig", "new"],
         todo1 = ["orig", "new"],
-        preserve_line_numbers = False
+        export = {"TODOTXT_PRESERVE_LINE_NUMBERS": "0"}
         )
 
   def test_leading_tag_order_not_normalized_if_no_other_edits(self):
@@ -511,6 +516,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
 
 class SliceMatchTest(SliceAllTest):
   slice_name = "match"
+  export = {}
 
   def test_match_task_with_priority(self):
     self.run_test(
@@ -603,118 +609,119 @@ class SliceMatchTest(SliceAllTest):
 
 class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "review"
+  export = {"TODOTXT_SLICE_REVIEW_INTERVALS": ""}
 
   def test_reviewable_by_age(self):
     self.run_test(
-        slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
-        edit0 = ["(_) i:1 a"]
+        edit0 = ["(_) i:1 a"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
         )
 
   def test_not_reviewable_by_age(self):
     self.run_test(
-        slice_review_intervals = "A:2",
         todo0 = ["(A) 1999-12-31 a"],
-        edit0 = []
+        edit0 = [],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:2"},
         )
 
   def test_reviewable_by_priority(self):
     self.run_test(
-        slice_review_intervals = "A:0,B:1",
         todo0 = ["(A) 2000-01-01 a", "(B) 2000-01-01 b"],
-        edit0 = ["(_) i:1 a"]
+        edit0 = ["(_) i:1 a"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:0,B:1"},
         )
 
   def test_reviewable_by_no_priority(self):
     self.run_test(
-        slice_review_intervals = "_:0,B:1",
         todo0 = ["2000-01-01 a", "(B) 2000-01-01 b"],
-        edit0 = ["(_) i:1 a"]
+        edit0 = ["(_) i:1 a"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "_:0,B:1"},
         )
 
   def test_reviewable_by_unconfigured_priority(self):
     self.run_test(
-        slice_review_intervals = "A:1",
         todo0 = ["(A) 2000-01-01 a", "(B) 2000-01-01 b"],
-        edit0 = ["(_) i:2 b"]
+        edit0 = ["(_) i:2 b"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
         )
 
   # regression test
   def test_reviewable_by_unconfigured_no_priority(self):
     self.run_test(
-        slice_review_intervals = "A:1",
         todo0 = ["(A) 2000-01-01 a", "2000-01-01 b"],
-        edit0 = ["(_) i:2 b"]
+        edit0 = ["(_) i:2 b"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
         )
 
   def test_reviewable_by_start_date(self):
     self.run_test(
-        slice_review_intervals = "_:5",
         todo0 = ["1999-12-31 a t:2000-01-01", "1999-12-31 b t:2000-01-02"],
-        edit0 = ["(_) i:1 a t:2000-01-01"]
+        edit0 = ["(_) i:1 a t:2000-01-01"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "_:5"},
         )
 
   def test_set_complete_date_does_not_reset_create_date(self):
     self.run_test(
-        slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["(_) i:1 a"],
         edit1 = ["x 2000-01-01 (_) i:1 a"],
         todo1 = ["x 2000-01-01 1999-12-31 a"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
         )
 
   def test_set_complete_date_clears_start_date(self):
     self.run_test(
-        slice_review_intervals = "_:5",
         todo0 = ["1999-12-31 a t:2000-01-01"],
         edit0 = ["(_) i:1 a t:2000-01-01"],
         edit1 = ["x 2000-01-01 (_) i:1 a t:2000-01-01"],
         todo1 = ["x 2000-01-01 1999-12-31 a"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "_:5"},
         )
 
   def test_set_start_date_resets_create_date(self):
     self.run_test(
-        slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["(_) i:1 a"],
         edit1 = ["(_) i:1 a t:2001-01-02"],
         todo1 = ["(A) 2000-01-01 a t:2001-01-02"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
         )
 
   def test_set_start_date_does_not_clear_start_date(self):
     self.run_test(
-        slice_review_intervals = "_:5",
         todo0 = ["1999-12-31 a t:2000-01-01"],
         edit0 = ["(_) i:1 a t:2000-01-01"],
         edit1 = ["(_) i:1 a t:2001-01-02"],
         todo1 = ["2000-01-01 a t:2001-01-02"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "_:5"},
         )
 
   def test_set_priority_resets_create_date(self):
     self.run_test(
-        slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["(_) i:1 a"],
         edit1 = ["(B) i:1 a"],
         todo1 = ["(B) 2000-01-01 a"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
         )
 
   def test_set_priority_clears_start_date(self):
     self.run_test(
-        slice_review_intervals = "_:5",
         todo0 = ["1999-12-31 a t:2000-01-01"],
         edit0 = ["(_) i:1 a t:2000-01-01"],
         edit1 = ["(B) i:1 a t:2000-01-01"],
         todo1 = ["(B) 2000-01-01 a"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "_:5"},
         )
 
   def test_edits_preserved(self):
     self.run_test(
-        slice_review_intervals = "A:1",
         todo0 = ["(A) 1999-12-31 a"],
         edit0 = ["(_) i:1 a"],
         edit1 = ["(_) i:1 b"],
         todo1 = ["(A) 1999-12-31 b"],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
         )
 
   # regression test
@@ -724,7 +731,7 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         edit0 = [],
         edit1 = ["a t:2000-01-02"],
         todo1 = ["a t:2000-01-02"],
-        date_on_add = False
+        export = {"TODOTXT_DATE_ON_ADD": "0"}
         )
 
   # regression test
@@ -734,12 +741,13 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         edit0 = [],
         edit1 = ["a t:2000-01-02"],
         todo1 = ["2000-01-01 a t:2000-01-02"],
-        date_on_add = True
+        export = {"TODOTXT_DATE_ON_ADD": "1"}
         )
 
 
 class SliceFutureTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "future"
+  export = {}
 
   def test_future_start_date(self):
     self.run_test(
@@ -777,7 +785,7 @@ class SliceFutureTest(AbstractSliceTest, unittest.TestCase):
     self.run_test(
         todo0 = ["x 2000-01-01 completed t:2000-01-02"],
         edit0 = ["x 2000-01-01 i:1 completed t:2000-01-02"],
-        disable_filter = True
+        export = {"TODOTXT_DISABLE_FILTER": "1"}
         )
 
   def test_sorted_by_start_date(self):

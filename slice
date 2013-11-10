@@ -41,10 +41,9 @@ class ColorDiff:
     print()
 
 
-# a thin shim between us and the real world
-# try to minimize what goes in here as it will not be tested
-class TodoEnv:
-  def __init__(self):
+class AbstractTodoEnv:
+  def __init__(self, os_environ):
+    self.__os_environ = os_environ
     self.todo_dir_path = lambda: self.__environ("TODO_DIR")
     self.todo_file_path = lambda: self.__environ("TODO_FILE")
     self.editor_path = lambda: self.__environ("EDITOR")
@@ -56,7 +55,7 @@ class TodoEnv:
 
   def __environ(self, key, default = None):
     try:
-      return os.environ[key]
+      return self.__os_environ[key]
     except KeyError:
       if default is not None:
         log.warn("Environment variable %s is not defined. Falling back to default: '%s'" % (key, default))
@@ -64,6 +63,13 @@ class TodoEnv:
       else:
         log.warn("Mandatory environment variable %s is not defined." % key)
         sys.exit(1)
+
+
+# a thin shim between us and the real world
+# try to minimize what goes in here as it will not be tested
+class TodoEnv(AbstractTodoEnv):
+  def __init__(self):
+    AbstractTodoEnv.__init__(self, os.environ)
 
   def today(self):
     return date.today()
