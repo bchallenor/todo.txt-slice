@@ -157,6 +157,22 @@ class AbstractSliceTest:
         date_on_add = True
         )
 
+  def test_duplicate_start_dates(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x t:1999-12-31 t:1999-12-31"],
+        todo1 = ["x t:1999-12-31"],
+        )
+
+  def test_multiple_start_dates(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["x t:1999-12-30 t:1999-12-31"],
+        todo1 = ["x t:1999-12-30"],
+        )
+
   # regression test
   def test_insert_task_with_explicit_no_level(self):
     self.run_test(

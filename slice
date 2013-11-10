@@ -203,8 +203,9 @@ class Tag:
 
 class ContextTag(Tag):
   def __init__(self, name):
-    self.name = name
     Tag.__init__(self, "@" + name)
+    self.key = self.raw
+    self.name = name
 
   def sort_key(self):
     return (0, self.name, None)
@@ -212,8 +213,9 @@ class ContextTag(Tag):
 
 class ProjectTag(Tag):
   def __init__(self, name):
-    self.name = name
     Tag.__init__(self, "+" + name)
+    self.key = self.raw
+    self.name = name
 
   def sort_key(self):
     return (1, self.name, None)
@@ -221,9 +223,9 @@ class ProjectTag(Tag):
 
 class KeyValueTag(Tag):
   def __init__(self, key, value):
+    Tag.__init__(self, key + ":" + value)
     self.key = key
     self.value = value
-    Tag.__init__(self, key + ":" + value)
 
   def sort_key(self):
     return (2, self.key, self.value)
@@ -326,6 +328,23 @@ class Task:
       title = title.replace(" " + tag.raw, "")
       title = title.replace(tag.raw + " ", "")
       title = title.replace(   tag.raw   , "")
+    return Task(title, self.priority, self.create_date, self.complete_date)
+
+  def remove_duplicate_tags(self):
+    tag_keys = set()
+    tokens = []
+
+    for token in self.tokens:
+      if isinstance(token, Tag):
+        if token.key not in tag_keys:
+          tag_keys.add(token.key)
+          tokens.append(token)
+        else:
+          log("discarding duplicate tag: %s" % token)
+      else:
+        tokens.append(token)
+
+    title = "".join([str(token) for token in tokens]).strip()
     return Task(title, self.priority, self.create_date, self.complete_date)
 
   # canonicalizes the order of tags at the edge of the title so that different slices make idempotent edits
@@ -550,12 +569,12 @@ class SliceEditor:
     for id, edited_task in recovered_edited_tasks.items():
       existing_task = merged_tasks[id] if id in merged_tasks else None
 
+      # clean up the user's input before unapplying the slice
+      edited_task = edited_task.remove_duplicate_tags()
       task = self.task_slice.unapply(edited_task, existing_task)
 
       priority = task.priority if not task.complete_date else Priority(None)
       task = task.set_priority(priority.normalize(explicit_no_level = False))
-
-      task = task
 
       if existing_task != task:
         self.env.print_diff(id, existing_task, task)
