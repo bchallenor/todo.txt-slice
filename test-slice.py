@@ -114,8 +114,6 @@ class VirtualTodoEnv(AbstractTodoEnv, unittest.TestCase):
       else:
         self.assertFalse(self.__todo_file_path_written, msg = "Expected todo file to be untouched as there were no changes")
     else:
-      self.assertFalse(self.__edit_dir.clean_exit, msg = "Expected edit directory to be untouched")
-      self.assertFalse(self.__edit_file_path_written, msg = "Expected edit file to be untouched")
       self.assertFalse(self.__todo_file_path_written, msg = "Expected todo file to be untouched")
 
 
@@ -225,7 +223,11 @@ class AbstractSliceTest:
 
     with capture(logging.getLogger("slice"), logging.WARN) as warnings:
 
-      slice.main(env, args)
+      if expect_clean_exit:
+        slice.main(env, args)
+      else:
+        with self.assertRaises(SystemExit):
+          slice.main(env, args)
 
       have_warnings = len(warnings) > 0
       if expect_warnings:
@@ -237,6 +239,15 @@ class AbstractSliceTest:
 
 
   # the tests in this class should work with any slice as they start empty
+
+  def test_editor_required(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        unset = {"EDITOR"},
+        expect_warnings = True,
+        expect_clean_exit = False
+        )
 
   def test_no_tasks(self):
     self.run_test(
@@ -610,6 +621,14 @@ class SliceMatchTest(SliceAllTest):
 class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "review"
   export = {"TODOTXT_SLICE_REVIEW_INTERVALS": ""}
+
+  def test_slice_review_intervals_required(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        unset = {"TODOTXT_SLICE_REVIEW_INTERVALS"},
+        expect_warnings = True
+        )
 
   def test_reviewable_by_age(self):
     self.run_test(
