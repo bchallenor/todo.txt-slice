@@ -641,6 +641,14 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         edit0 = ["(_) i:2 b"]
         )
 
+  # regression test
+  def test_reviewable_by_unconfigured_no_priority(self):
+    self.run_test(
+        slice_review_intervals = "A:1",
+        todo0 = ["(A) 2000-01-01 a", "2000-01-01 b"],
+        edit0 = ["(_) i:2 b"]
+        )
+
   def test_reviewable_by_start_date(self):
     self.run_test(
         slice_review_intervals = "_:5",

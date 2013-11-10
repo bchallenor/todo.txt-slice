@@ -539,7 +539,8 @@ class ReviewTaskSlice(TaskSlice):
       return True
 
     age = self.env.today - task.create_date
-    interval = self.priority_to_interval[task.priority]
+    # unconfigured priorities will never escape the review
+    interval = self.priority_to_interval[task.priority] if task.priority in self.priority_to_interval else timedelta(days = 0)
     return age >= interval
 
   def apply(self, task):
@@ -755,13 +756,6 @@ def build_review_slice(env, args):
       sys.exit(1)
 
     priority_to_interval[priority] = timedelta(days = interval)
-
-  # unconfigured priorities will never escape the review
-  for priority_level in string.ascii_uppercase:
-    priority = Priority(priority_level)
-
-    if priority not in priority_to_interval:
-      priority_to_interval[priority] = timedelta(days = 0)
 
   return ReviewTaskSlice(env, priority_to_interval)
 
