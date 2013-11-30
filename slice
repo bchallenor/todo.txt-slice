@@ -538,6 +538,35 @@ class FutureTaskSlice(TaskSlice):
     return task
 
 
+class ListTaskSlice(TaskSlice):
+  def __init__(self, env, terms):
+    TaskSlice.__init__(self, env)
+    self.terms = terms
+
+  def comments(self):
+    if len(self.terms) == 0:
+      comment = "All tasks"
+    else:
+      comment = "Tasks containing terms: " + " ".join(self.terms)
+    return [comment]
+
+  def matches(self, task):
+    for term in self.terms:
+      if not term in task.line:
+        return False
+    return True
+
+  def apply(self, task):
+    sliced_task = task
+    sliced_task = sliced_task.set_create_date(None)
+    return sliced_task
+
+  def unapply(self, sliced_task, original_task):
+    task = sliced_task
+    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date())
+    return task
+
+
 class MatchTaskSlice(TaskSlice):
   def __init__(self, env, priority = None, tags = set()):
     TaskSlice.__init__(self, env)
@@ -714,15 +743,21 @@ def usage():
   print("    future")
   print("      Opens tasks with a start date (t:<date>) in the future, sorted by start date.")
   print()
+  print("    list [TERM...]")
+  print("      Opens tasks containing TERM(s).")
+  print("      If no TERM(s) are supplied, all tasks will be opened.")
+  print()
   print("    match [PRIORITY] [TAG...]")
   print("      Opens tasks matching PRIORITY and/or TAG(s).")
-  print("      PRIORITY and TAG(s) will be automatically applied to all edited tasks.")
+  print("      If neither PRIORITY nor TAG(s) are supplied, all tasks will be opened.")
   print()
-  print("      PRIORITY (if supplied) must be a single uppercase letter.")
-  print()
+  print("      PRIORITY must be a letter, A-Z, or an underscore, indicating an unprioritized task.")
   print("      TAG(s) can be @contexts, +projects or custom key:value extensions.")
   print()
-  print("      If neither PRIORITY nor TAG(s) are supplied, all tasks will be matched.")
+  print("      'match' differs from 'list' in that:")
+  print("      - PRIORITY and TAG(s) will be hidden during editing")
+  print("      - PRIORITY and TAG(s) will be automatically applied to all edited tasks")
+  print("      - 'match' can only work with PRIORITY and TAG(s), whereas 'list' can match any text")
   print()
   print("    review")
   print("      Opens tasks for review:")
@@ -757,6 +792,10 @@ def build_all_slice(env, args):
 
 def build_future_slice(env, args):
   return FutureTaskSlice(env)
+
+
+def build_list_slice(env, args):
+  return ListTaskSlice(env, args)
 
 
 def build_match_slice(env, args):
@@ -818,6 +857,7 @@ def build_slice(env, name, args):
   slices = {
     "all": build_all_slice,
     "future": build_future_slice,
+    "list": build_list_slice,
     "match": build_match_slice,
     "review": build_review_slice
   }

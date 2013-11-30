@@ -554,6 +554,49 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
         )
 
 
+class SliceListTest(SliceAllTest):
+  slice_name = "list"
+  export = {}
+
+  def test_comment_header_terms(self):
+    self.run_test(
+        slice_args = ["x", "y"],
+        todo0 = [],
+        edit0 = ["# Tasks containing terms: x y", ""],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
+  def test_list_task_with_term(self):
+    self.run_test(
+        slice_args = ["x"],
+        todo0 = ["x", "y"],
+        edit0 = ["i:1 x"]
+        )
+
+  def test_list_task_with_multiple_terms(self):
+    self.run_test(
+        slice_args = ["x", "y1"],
+        todo0 = ["x y1", "y1 x", "x y2"],
+        edit0 = ["i:1 x y1", "i:2 y1 x"]
+        )
+
+  def test_list_task_with_tag_does_not_strip_tag(self):
+    self.run_test(
+        slice_args = ["@c"],
+        todo0 = ["x", "a @c"],
+        edit0 = ["i:2 a @c"]
+        )
+
+  def test_list_task_hides_but_preserves_date(self):
+    self.run_test(
+        slice_args = [],
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["(A) i:1 a"]
+        )
+
+
 class SliceMatchTest(SliceAllTest):
   slice_name = "match"
   export = {}
