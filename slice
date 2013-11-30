@@ -334,8 +334,15 @@ class Task:
     return tasks
 
   @classmethod
-  def save_all(cls, env, tasks, path):
+  def save_all(cls, env, tasks, path, comments = []):
     lines = []
+
+    if len(comments) > 0:
+      lines.append("#")
+      for comment in comments:
+        lines.append("# " + comment)
+      lines.append("#")
+
     max_id = max(tasks.keys()) if len(tasks) > 0 else 0
     for id in range(1, max_id + 1):
       if id in tasks:
@@ -343,6 +350,7 @@ class Task:
         lines.append(task.line)
       elif env.preserve_line_numbers():
         lines.append("")
+
     env.write_lines(path, lines)
 
   @classmethod
@@ -485,6 +493,9 @@ class TaskSlice:
   def __init__(self, env):
     self.env = env
 
+  def comments(self):
+    raise NotImplementedError
+
   def hidden(self, task):
     return task.is_hidden(self.env.today()) and not self.env.disable_filter()
 
@@ -504,6 +515,9 @@ class TaskSlice:
 class FutureTaskSlice(TaskSlice):
   def __init__(self, env):
     TaskSlice.__init__(self, env)
+
+  def comments(self):
+    return ["Future tasks"]
 
   def hidden(self, task):
     return task.complete_date and not self.env.disable_filter()
@@ -531,6 +545,19 @@ class MatchTaskSlice(TaskSlice):
     self.priority = priority
     self.tags = tags
 
+  def comments(self):
+    if not self.priority and len(self.tags) == 0:
+      comment = "All tasks"
+    else:
+      comment = "Tasks with "
+      if self.priority:
+        comment += "priority " + str(self.priority)
+      if len(self.tags) > 0:
+        if self.priority:
+          comment += " and "
+        comment += "tags matching: " + " ".join([str(tag) for tag in self.tags])
+    return [comment]
+
   def matches(self, task):
     return (not self.priority or task.priority == self.priority) and task.tags >= self.tags
 
@@ -554,6 +581,9 @@ class ReviewTaskSlice(TaskSlice):
   def __init__(self, env, priority_to_interval):
     TaskSlice.__init__(self, env)
     self.priority_to_interval = priority_to_interval
+
+  def comments(self):
+    return ["Reviewable tasks (%s)" % self.env.slice_review_intervals()]
 
   def matches(self, task):
     if not task.create_date:
@@ -657,7 +687,7 @@ class SliceEditor:
     # we want the file to be named todo.txt for compatibility with syntax-highlighting editors
     with self.env.create_temp_dir() as temp_dir_path:
       temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
-      Task.save_all(self.env, tasks, temp_todo_path)
+      Task.save_all(self.env, tasks, temp_todo_path, comments = self.task_slice.comments())
       self.env.subprocess_check_call(self.env.editor_path(), [temp_todo_path])
       return Task.load_all(self.env, temp_todo_path, allow_comments = True)
 

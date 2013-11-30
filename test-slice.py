@@ -39,7 +39,7 @@ class VirtualTodoEnv(AbstractTodoEnv, unittest.TestCase):
   __todo_dir_path = "TODO"
   __todo_file_path = os.path.join(__todo_dir_path, __todo_file_name)
 
-  def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, export, unset):
+  def __init__(self, expect_clean_exit, todo0, edit0, edit1, todo1, strip_edit0_comments, export, unset):
     unittest.TestCase.__init__(self)
 
     self.__expect_clean_exit = expect_clean_exit
@@ -48,6 +48,8 @@ class VirtualTodoEnv(AbstractTodoEnv, unittest.TestCase):
     self.__edit0 = edit0
     self.__edit1 = edit1
     self.__todo1 = todo1
+
+    self.__strip_edit0_comments = strip_edit0_comments
 
     self.__edit_dir_deleted = False
     self.__edit_file_path_written = False
@@ -85,7 +87,8 @@ class VirtualTodoEnv(AbstractTodoEnv, unittest.TestCase):
       self.assertEqual(self.__todo1, lines, msg = "Todo file content does not match expected content")
       self.__todo_file_path_written = True
     elif path == self.__edit_file_path:
-      self.assertEqual(self.__edit0, lines, msg = "Slice file content does not match expected content")
+      testable_lines = [line for line in lines if not line.startswith("#")] if self.__strip_edit0_comments else lines
+      self.assertEqual(self.__edit0, testable_lines, msg = "Slice file content does not match expected content")
       self.__edit_file_path_written = True
     else:
       self.fail("attempt to write unknown path: %s" % path)
@@ -198,6 +201,7 @@ class AbstractSliceTest:
       edit0 = None,
       edit1 = None,
       todo1 = None,
+      strip_edit0_comments = True,
       export = {},
       unset = set()
       ):
@@ -217,6 +221,7 @@ class AbstractSliceTest:
         edit0 = edit0,
         edit1 = edit1 if edit1 is not None else edit0,
         todo1 = todo1 if todo1 is not None else todo0,
+        strip_edit0_comments = strip_edit0_comments,
         export = export_with_defaults,
         unset = unset
         )
@@ -396,6 +401,15 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "all"
   export = {}
 
+  def test_comment_header(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = ["#", "# All tasks", "#"],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
   def test_single_task(self):
     self.run_test(
         todo0 = ["task"],
@@ -544,6 +558,36 @@ class SliceMatchTest(SliceAllTest):
   slice_name = "match"
   export = {}
 
+  def test_comment_header_priority(self):
+    self.run_test(
+        slice_args = ["A"],
+        todo0 = [],
+        edit0 = ["#", "# Tasks with priority (A)", "#"],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
+  def test_comment_header_tags(self):
+    self.run_test(
+        slice_args = ["@c"],
+        todo0 = [],
+        edit0 = ["#", "# Tasks with tags matching: @c", "#"],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
+  def test_comment_header_priority_and_tags(self):
+    self.run_test(
+        slice_args = ["A", "@c"],
+        todo0 = [],
+        edit0 = ["#", "# Tasks with priority (A) and tags matching: @c", "#"],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
   def test_match_task_with_priority(self):
     self.run_test(
         slice_args = ["A"],
@@ -636,6 +680,16 @@ class SliceMatchTest(SliceAllTest):
 class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "review"
   export = {"TODOTXT_SLICE_REVIEW_INTERVALS": ""}
+
+  def test_comment_header(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = ["#", "# Reviewable tasks (A:1)", "#"],
+        edit1 = [],
+        todo1 = [],
+        export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
+        strip_edit0_comments = False
+        )
 
   def test_slice_review_intervals_required(self):
     self.run_test(
@@ -782,6 +836,15 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
 class SliceFutureTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "future"
   export = {}
+
+  def test_comment_header(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = ["#", "# Future tasks", "#"],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
 
   def test_future_start_date(self):
     self.run_test(
