@@ -708,6 +708,16 @@ class SliceMatchTest(AbstractSliceAllTest, unittest.TestCase):
         edit0 = ["i:2 a"]
         )
 
+  # regression test
+  def test_match_task_with_unparseable_tag(self):
+    self.run_test(
+        slice_args = ["not_a_tag"],
+        todo0 = [],
+        edit0 = [],
+        expect_warnings = True,
+        expect_clean_exit = False
+        )
+
   def test_match_task_hides_but_preserves_date(self):
     self.run_test(
         slice_args = ["A"],

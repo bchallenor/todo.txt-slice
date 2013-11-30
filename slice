@@ -817,21 +817,26 @@ def build_list_slice(env, args):
 def build_match_slice(env, args):
   priority = None
   tags = set()
+  argstr = " ".join(args)
 
-  if len(args) > 0 and len(args[0]) == 1:
-    priority_level = args.pop(0)
-    if priority_level != "_" and priority_level not in string.ascii_uppercase: #TODO: this level logic shouldn't be here
-      usage()
-      sys.exit(1)
-    priority = Priority(priority_level if priority_level != "_" else None)
+  if len(args) > 0:
+    priority_level = args[0]
+    try:
+      priority = Priority.parse("(%s)" % priority_level)
+      args.pop(0)
+    except ValueError:
+      # try parsing as a tag instead
+      pass
 
   while len(args) > 0:
     arg = args.pop()
-    tag = Tag.parse(arg)
-    if not tag:
+    try:
+      tag = Tag.parse(arg)
+      tags.add(tag)
+    except ValueError:
+      log.warn("Error parsing args '%s': expected [PRIORITY] [TAG...]" % argstr)
       usage()
       sys.exit(1)
-    tags.add(tag)
 
   return MatchTaskSlice(env, priority, tags)
 
