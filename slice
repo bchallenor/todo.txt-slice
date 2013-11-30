@@ -750,7 +750,7 @@ def usage():
   print("    and a colorized diff will be printed to the console.")
   print()
   print("    Note: In order to merge changes to the slice back into todo.txt, each task in the")
-  print("          slice is 'tagged' with the line number. The first task is tagged with 'i:1',")
+  print("          slice is 'tagged' with its line number. The first task is tagged with 'i:1',")
   print("          the second 'i:2', etc. Because this uses the standard key:value tag format, the")
   print("          slice is still a valid todo file, and editor plugins will continue to work.")
   print()
