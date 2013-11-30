@@ -313,7 +313,7 @@ class Task:
     if date_str is None:
       return None
     try:
-      return datetime.strptime(date_str, '%Y-%m-%d').date()
+      return datetime.strptime(date_str, "%Y-%m-%d").date()
     except ValueError:
       return None
 
