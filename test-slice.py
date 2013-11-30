@@ -657,7 +657,7 @@ class SliceMatchTest(AbstractSliceAllTest, unittest.TestCase):
     self.run_test(
         slice_args = ["@c"],
         todo0 = [],
-        edit0 = ["# Tasks with tags matching: @c", ""],
+        edit0 = ["# Tasks with tags: @c", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False
@@ -667,7 +667,7 @@ class SliceMatchTest(AbstractSliceAllTest, unittest.TestCase):
     self.run_test(
         slice_args = ["A", "@c"],
         todo0 = [],
-        edit0 = ["# Tasks with priority (A) and tags matching: @c", ""],
+        edit0 = ["# Tasks with priority (A) and tags: @c", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False

@@ -595,7 +595,7 @@ class MatchTaskSlice(TaskSlice):
       if len(self.tags) > 0:
         if self.priority:
           comment += " and "
-        comment += "tags matching: " + " ".join([str(tag) for tag in self.tags])
+        comment += "tags: " + " ".join([str(tag) for tag in self.tags])
     return [comment]
 
   def matches(self, task):
