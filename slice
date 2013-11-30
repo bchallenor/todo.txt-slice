@@ -438,7 +438,7 @@ class Task:
           tag_keys.add(token.key)
           tokens.append(token)
         else:
-          log.warn("discarding duplicate tag: %s" % token)
+          log.warn("Discarding duplicate tag: %s" % token)
       else:
         tokens.append(token)
 
@@ -461,7 +461,7 @@ class Task:
       return None
     tag = tags.pop()
     if len(tags) > 0:
-      log.warn("ignoring duplicate tags: %s" % tags)
+      log.warn("Ignoring duplicate tags: %s" % tags)
     return tag
 
   def pop_key_value_tag(self, key):
@@ -472,7 +472,7 @@ class Task:
     task = self.remove_tags(set(tags))
     tag = tags.pop()
     if len(tags) > 0:
-      log.warn("discarding duplicate tags: %s" % tags)
+      log.warn("Discarding duplicate tags: %s" % tags)
     return tag, task
 
   def set_priority(self, priority):
@@ -694,9 +694,9 @@ class SliceEditor:
           if tmpid in self.editable_tasks: # safety check
             id = tmpid
           else:
-            log.warn("ignoring unknown id: %s" % id_tag)
+            log.warn("Ignoring unknown id: %s" % id_tag)
         except ValueError:
-          log.warn("ignoring invalid id: %s" % id_tag)
+          log.warn("Ignoring invalid id: %s" % id_tag)
       if id is None:
         id = next_id
         next_id += 1
