@@ -87,7 +87,7 @@ class VirtualTodoEnv(AbstractTodoEnv, unittest.TestCase):
       self.assertEqual(self.__todo1, lines, msg = "Todo file content does not match expected content")
       self.__todo_file_path_written = True
     elif path == self.__edit_file_path:
-      testable_lines = [line for line in lines if not line.startswith("#")] if self.__strip_edit0_comments else lines
+      testable_lines = [line for line in lines if not line.startswith("#") and line != ""] if self.__strip_edit0_comments else lines
       self.assertEqual(self.__edit0, testable_lines, msg = "Slice file content does not match expected content")
       self.__edit_file_path_written = True
     else:
@@ -404,7 +404,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
   def test_comment_header(self):
     self.run_test(
         todo0 = [],
-        edit0 = ["#", "# All tasks", "#"],
+        edit0 = ["# All tasks", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False
@@ -562,7 +562,7 @@ class SliceMatchTest(SliceAllTest):
     self.run_test(
         slice_args = ["A"],
         todo0 = [],
-        edit0 = ["#", "# Tasks with priority (A)", "#"],
+        edit0 = ["# Tasks with priority (A)", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False
@@ -573,7 +573,7 @@ class SliceMatchTest(SliceAllTest):
     self.run_test(
         slice_args = ["_"],
         todo0 = [],
-        edit0 = ["#", "# Tasks with priority (_)", "#"],
+        edit0 = ["# Tasks with priority (_)", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False
@@ -583,7 +583,7 @@ class SliceMatchTest(SliceAllTest):
     self.run_test(
         slice_args = ["@c"],
         todo0 = [],
-        edit0 = ["#", "# Tasks with tags matching: @c", "#"],
+        edit0 = ["# Tasks with tags matching: @c", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False
@@ -593,7 +593,7 @@ class SliceMatchTest(SliceAllTest):
     self.run_test(
         slice_args = ["A", "@c"],
         todo0 = [],
-        edit0 = ["#", "# Tasks with priority (A) and tags matching: @c", "#"],
+        edit0 = ["# Tasks with priority (A) and tags matching: @c", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False
@@ -695,7 +695,7 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
   def test_comment_header(self):
     self.run_test(
         todo0 = [],
-        edit0 = ["#", "# Reviewable tasks (A:1)", "#"],
+        edit0 = ["# Reviewable tasks (A:1)", ""],
         edit1 = [],
         todo1 = [],
         export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
@@ -851,7 +851,7 @@ class SliceFutureTest(AbstractSliceTest, unittest.TestCase):
   def test_comment_header(self):
     self.run_test(
         todo0 = [],
-        edit0 = ["#", "# Future tasks", "#"],
+        edit0 = ["# Future tasks", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False

@@ -338,10 +338,9 @@ class Task:
     lines = []
 
     if len(comments) > 0:
-      lines.append("#")
       for comment in comments:
         lines.append("# " + comment)
-      lines.append("#")
+      lines.append("")
 
     max_id = max(tasks.keys()) if len(tasks) > 0 else 0
     for id in range(1, max_id + 1):
