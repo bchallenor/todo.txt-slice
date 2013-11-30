@@ -822,19 +822,21 @@ class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
         export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "_:0,B:1"},
         )
 
-  def test_reviewable_by_unconfigured_priority(self):
+  def test_unconfigured_priority_ignored(self):
     self.run_test(
         todo0 = ["(A) 2000-01-01 a", "(B) 2000-01-01 b"],
-        edit0 = ["(_) i:2 b"],
+        edit0 = [],
         export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
+        expect_warnings = True
         )
 
   # regression test
-  def test_reviewable_by_unconfigured_no_priority(self):
+  def test_unconfigured_no_priority_ignored(self):
     self.run_test(
         todo0 = ["(A) 2000-01-01 a", "2000-01-01 b"],
-        edit0 = ["(_) i:2 b"],
+        edit0 = [],
         export = {"TODOTXT_SLICE_REVIEW_INTERVALS": "A:1"},
+        expect_warnings = True
         )
 
   def test_reviewable_by_start_date(self):

@@ -634,8 +634,12 @@ class ReviewTaskSlice(TaskSlice):
 
     age = self.env.today() - task.create_date
     # unconfigured priorities will never escape the review
-    interval = self.priority_to_interval[task.priority] if task.priority in self.priority_to_interval else timedelta(days = 0)
-    return age >= interval
+    if task.priority in self.priority_to_interval:
+      interval = self.priority_to_interval[task.priority]
+      return age >= interval
+    else:
+      log.warn("Priority %s is not configured in TODOTXT_SLICE_REVIEW_INTERVALS. Ignoring task: %s" % (task.priority.normalize(explicit_no_level = True), task.line))
+      return False
 
   def apply(self, task):
     sliced_task = task
@@ -795,9 +799,6 @@ def usage():
   print("      - 'B' tasks should be reviewed after 7 days")
   print("      - 'C' tasks should be reviewed after 56 days")
   print("      - 'Z' tasks should be reviewed after 182 days")
-  print()
-  print("      Note: The default interval is 0, so unconfigured priorities (e.g. 'D' above)")
-  print("            will _never_ escape review.")
   print()
 
 
