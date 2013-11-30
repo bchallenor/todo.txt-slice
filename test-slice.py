@@ -238,7 +238,7 @@ class AbstractSliceTest:
     env.assert_success()
 
 
-  # the tests in this class should work with any slice as they start empty
+  # the tests in this class should work with any slice as the todo file either starts empty, or causes a fatal error
 
   def test_editor_required(self):
     self.run_test(
@@ -270,6 +270,21 @@ class AbstractSliceTest:
         edit1 = ["x"],
         todo1 = ["2000-01-01 x"],
         export = {"TODOTXT_DATE_ON_ADD": "1"}
+        )
+
+  def test_refuse_to_edit_if_existing_task_looks_like_comment(self):
+    self.run_test(
+        todo0 = ["# x"],
+        expect_warnings = True,
+        expect_clean_exit = False
+        )
+
+  def test_ignore_comments_in_edit(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["# x"],
+        todo1 = [],
         )
 
   def test_leading_tag_order_normalized(self):

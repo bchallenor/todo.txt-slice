@@ -318,10 +318,16 @@ class Task:
       return None
 
   @classmethod
-  def load_all(cls, env, path):
+  def load_all(cls, env, path, allow_comments = False):
     tasks = {}
     for i, line in enumerate(env.read_lines(path)):
       id = i + 1
+      if line.startswith("#"):
+        if allow_comments:
+          continue
+        else:
+          log.error("Found task starting with '#' which could be confused with a comment.")
+          sys.exit(1)
       line1 = line.rstrip("\r\n")
       if len(line1) > 0:
         tasks[id] = cls.parse(line1)
@@ -653,7 +659,7 @@ class SliceEditor:
       temp_todo_path = os.path.join(temp_dir_path, "todo.txt")
       Task.save_all(self.env, tasks, temp_todo_path)
       self.env.subprocess_check_call(self.env.editor_path(), [temp_todo_path])
-      return Task.load_all(self.env, temp_todo_path)
+      return Task.load_all(self.env, temp_todo_path, allow_comments = True)
 
   def edit_and_merge(self):
     edited_tasks = self.__edit(self.sorted_editable_tasks)
