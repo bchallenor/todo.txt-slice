@@ -539,21 +539,33 @@ class FutureTaskSlice(TaskSlice):
 
 
 class ListTaskSlice(TaskSlice):
-  def __init__(self, env, terms):
+  def __init__(self, env, inc_terms, exc_terms):
     TaskSlice.__init__(self, env)
-    self.terms = terms
+    self.inc_terms = inc_terms
+    self.exc_terms = exc_terms
 
   def comments(self):
-    if len(self.terms) == 0:
+    if len(self.inc_terms) == 0 and len(self.exc_terms) == 0:
       comment = "All tasks"
     else:
-      comment = "Tasks containing terms: " + " ".join(self.terms)
+      comment = "Tasks "
+      if len(self.inc_terms) > 0:
+        comment += "including terms: " + " ".join(self.inc_terms)
+      if len(self.exc_terms) > 0:
+        if len(self.inc_terms) > 0:
+          comment += " and "
+        comment += "excluding terms: " + " ".join(self.exc_terms)
     return [comment]
 
   def matches(self, task):
-    for term in self.terms:
+    for term in self.inc_terms:
       if not term in task.line:
         return False
+
+    for term in self.exc_terms:
+      if term in task.line:
+        return False
+
     return True
 
   def apply(self, task):
@@ -741,7 +753,8 @@ def usage():
   print("      Opens tasks with a start date (t:<date>) in the future, sorted by start date.")
   print()
   print("    list [TERM...]")
-  print("      Opens tasks containing TERM(s).")
+  print("      Opens tasks including all TERM(s).")
+  print("      TERM(s) preceded by a minus sign (i.e. -TERM) are excluded rather than included.")
   print("      If no TERM(s) are supplied, all tasks will be opened.")
   print()
   print("    match [PRIORITY] [TAG...]")
@@ -755,6 +768,7 @@ def usage():
   print("      - PRIORITY and TAG(s) will be hidden during editing")
   print("      - PRIORITY and TAG(s) will be automatically applied to all edited tasks")
   print("      - 'match' can only work with PRIORITY and TAG(s), whereas 'list' can match any text")
+  print("      - 'match' can only perform positive matches, whereas 'list' can exclude terms")
   print()
   print("    review")
   print("      Opens tasks for review:")
@@ -788,7 +802,16 @@ def build_future_slice(env, args):
 
 
 def build_list_slice(env, args):
-  return ListTaskSlice(env, args)
+  inc_terms = []
+  exc_terms = []
+
+  for term in args:
+    if term.startswith("-"):
+      exc_terms.append(term[1:])
+    else:
+      inc_terms.append(term)
+
+  return ListTaskSlice(env, inc_terms, exc_terms)
 
 
 def build_match_slice(env, args):

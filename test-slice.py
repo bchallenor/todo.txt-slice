@@ -555,11 +555,31 @@ class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
   slice_name = "list"
   export = {}
 
-  def test_comment_header_terms(self):
+  def test_comment_header_included_terms(self):
     self.run_test(
         slice_args = ["x", "y"],
         todo0 = [],
-        edit0 = ["# Tasks containing terms: x y", ""],
+        edit0 = ["# Tasks including terms: x y", ""],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
+  def test_comment_header_excluded_terms(self):
+    self.run_test(
+        slice_args = ["-x", "-y"],
+        todo0 = [],
+        edit0 = ["# Tasks excluding terms: x y", ""],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
+  def test_comment_header_included_and_excluded_terms(self):
+    self.run_test(
+        slice_args = ["x", "-y"],
+        todo0 = [],
+        edit0 = ["# Tasks including terms: x and excluding terms: y", ""],
         edit1 = [],
         todo1 = [],
         strip_edit0_comments = False
@@ -572,11 +592,25 @@ class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
         edit0 = ["i:1 x"]
         )
 
+  def test_list_task_with_excluded_term(self):
+    self.run_test(
+        slice_args = ["-x"],
+        todo0 = ["x", "y"],
+        edit0 = ["i:2 y"]
+        )
+
   def test_list_task_with_multiple_terms(self):
     self.run_test(
         slice_args = ["x", "y1"],
         todo0 = ["x y1", "y1 x", "x y2"],
         edit0 = ["i:1 x y1", "i:2 y1 x"]
+        )
+
+  def test_list_task_with_included_and_excluded_terms(self):
+    self.run_test(
+        slice_args = ["x", "-y1"],
+        todo0 = ["x y1", "y1 x", "x y2"],
+        edit0 = ["i:3 x y2"]
         )
 
   def test_list_task_with_tag_does_not_strip_tag(self):
