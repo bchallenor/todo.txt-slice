@@ -397,10 +397,7 @@ class AbstractSliceTest:
         )
 
 
-class SliceAllTest(AbstractSliceTest, unittest.TestCase):
-  slice_name = "all"
-  export = {}
-
+class AbstractSliceAllTest(AbstractSliceTest):
   def test_comment_header(self):
     self.run_test(
         todo0 = [],
@@ -554,7 +551,7 @@ class SliceAllTest(AbstractSliceTest, unittest.TestCase):
         )
 
 
-class SliceListTest(SliceAllTest):
+class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
   slice_name = "list"
   export = {}
 
@@ -597,7 +594,7 @@ class SliceListTest(SliceAllTest):
         )
 
 
-class SliceMatchTest(SliceAllTest):
+class SliceMatchTest(AbstractSliceAllTest, unittest.TestCase):
   slice_name = "match"
   export = {}
 
