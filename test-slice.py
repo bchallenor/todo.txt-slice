@@ -568,6 +568,17 @@ class SliceMatchTest(SliceAllTest):
         strip_edit0_comments = False
         )
 
+  # regression test
+  def test_comment_header_no_level_priority(self):
+    self.run_test(
+        slice_args = ["_"],
+        todo0 = [],
+        edit0 = ["#", "# Tasks with priority (_)", "#"],
+        edit1 = [],
+        todo1 = [],
+        strip_edit0_comments = False
+        )
+
   def test_comment_header_tags(self):
     self.run_test(
         slice_args = ["@c"],

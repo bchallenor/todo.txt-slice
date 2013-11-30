@@ -551,7 +551,7 @@ class MatchTaskSlice(TaskSlice):
     else:
       comment = "Tasks with "
       if self.priority:
-        comment += "priority " + str(self.priority)
+        comment += "priority " + str(self.priority.normalize(explicit_no_level = True))
       if len(self.tags) > 0:
         if self.priority:
           comment += " and "
