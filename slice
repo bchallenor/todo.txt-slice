@@ -748,7 +748,6 @@ def usage():
   # TODO: detect script name
   print("  slice <command> [<args>]")
   print("    Opens a 'slice' of your tasks in $EDITOR.")
-  print("    The slice is automatically sorted, and completed/future tasks are hidden.")
   print("    After editing, changes to the slice will be merged back into todo.txt,")
   print("    and a colorized diff will be printed to the console.")
   print()
