@@ -535,6 +535,15 @@ class AbstractSliceAllTest(AbstractSliceTest):
         )
 
   # regression test
+  def test_can_manually_make_changes_equal_to_normalization_even_if_no_other_edits(self):
+    self.run_test(
+        todo0 = ["x t:2000-01-01"],
+        edit0 = ["i:1 x t:2000-01-01"],
+        edit1 = ["i:1 x"],
+        todo1 = ["x"],
+        )
+
+  # regression test
   def test_url_is_not_considered_tag(self):
     self.run_test(
         todo0 = ["http://example.com @c"],

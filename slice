@@ -671,6 +671,7 @@ class SliceEditor:
     self.max_id_len = len(str(self.max_id))
     self.editable_tasks = self.__get_editable_tasks(tasks, task_slice, self.max_id_len)
     self.sorted_editable_tasks = Task.sorted(self.editable_tasks, key = self.task_slice.sort_key)
+    self.recovered_editable_tasks = self.__recover_task_ids(self.editable_tasks)
 
   def __get_editable_tasks(self, tasks, task_slice, max_id_len):
     editable_tasks = {}
@@ -713,15 +714,17 @@ class SliceEditor:
       del merged_tasks[id]
 
     for id, edited_task in recovered_edited_tasks.items():
-      existing_task = merged_tasks[id] if id in merged_tasks else None
+      # don't write changes that are only due to normalization
+      is_new = id not in self.recovered_editable_tasks
+      is_edited = not is_new and edited_task != self.recovered_editable_tasks[id]
+      if is_new or is_edited:
+        existing_task = merged_tasks[id] if is_edited else None
 
-      task = self.task_slice.unapply(edited_task, existing_task)
+        task = self.task_slice.unapply(edited_task, existing_task)
 
-      # normalize tag order etc
-      task = task.normalize(self.env.today())
+        # normalize tag order etc
+        task = task.normalize(self.env.today())
 
-      # but don't write changes that are only due to normalization
-      if existing_task is None or task != existing_task.normalize(self.env.today()):
         self.env.print_diff(id, self.max_id_len, existing_task, task)
         merged_tasks[id] = task
 
