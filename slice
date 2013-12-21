@@ -543,8 +543,8 @@ class FutureTaskSlice(TaskSlice):
 class ListTaskSlice(TaskSlice):
   def __init__(self, env, inc_terms, exc_terms):
     TaskSlice.__init__(self, env)
-    self.inc_terms = inc_terms
-    self.exc_terms = exc_terms
+    self.inc_terms = [term.lower() for term in inc_terms]
+    self.exc_terms = [term.lower() for term in exc_terms]
 
   def comments(self):
     if len(self.inc_terms) == 0 and len(self.exc_terms) == 0:
@@ -560,12 +560,14 @@ class ListTaskSlice(TaskSlice):
     return [comment]
 
   def matches(self, task):
+    task_line_lower = task.line.lower()
+
     for term in self.inc_terms:
-      if not term in task.line:
+      if not term in task_line_lower:
         return False
 
     for term in self.exc_terms:
-      if term in task.line:
+      if term in task_line_lower:
         return False
 
     return True

@@ -601,9 +601,25 @@ class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
         edit0 = ["i:1 x"]
         )
 
+  # regression test
+  def test_list_task_with_term_case_insensitive(self):
+    self.run_test(
+        slice_args = ["X"],
+        todo0 = ["x", "y"],
+        edit0 = ["i:1 x"]
+        )
+
   def test_list_task_with_excluded_term(self):
     self.run_test(
         slice_args = ["-x"],
+        todo0 = ["x", "y"],
+        edit0 = ["i:2 y"]
+        )
+
+  # regression test
+  def test_list_task_with_excluded_term_case_insensitive(self):
+    self.run_test(
+        slice_args = ["-X"],
         todo0 = ["x", "y"],
         edit0 = ["i:2 y"]
         )
