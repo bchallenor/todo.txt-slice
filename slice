@@ -91,6 +91,8 @@ class TodoEnv(AbstractTodoEnv):
     subprocess.check_call([path] + args)
 
   def print_diff(self, id, max_id_len, task_a, task_b):
+    # we should only be printing diffs where there is actually a difference
+    assert task_a != task_b, "expected task_a <%s> != task_b: <%s>" % (task_a, task_b)
     header = "%s " % str(id).zfill(max_id_len)
     log_a = task_a.line if task_a else ""
     log_b = task_b.line if task_b else ""
