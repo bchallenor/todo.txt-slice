@@ -58,10 +58,10 @@ class AbstractTodoEnv:
       return self.__os_environ[key]
     except KeyError:
       if default is not None:
-        log.warn("Environment variable %s is not defined. Falling back to default: '%s'" % (key, default))
+        log.warning("Environment variable %s is not defined. Falling back to default: '%s'" % (key, default))
         return default
       else:
-        log.warn("Mandatory environment variable %s is not defined." % key)
+        log.warning("Mandatory environment variable %s is not defined." % key)
         sys.exit(1)
 
 
@@ -438,7 +438,7 @@ class Task:
           tags.add(token)
           tokens.append(token)
         else:
-          log.warn("Discarding duplicate tag: %s" % token)
+          log.warning("Discarding duplicate tag: %s" % token)
       else:
         tokens.append(token)
 
@@ -460,7 +460,7 @@ class Task:
       return None
     tag = tags.pop()
     if len(tags) > 0:
-      log.warn("Ignoring duplicate tags: %s" % tags)
+      log.warning("Ignoring duplicate tags: %s" % tags)
     return tag
 
   def pop_key_value_tag(self, key):
@@ -471,7 +471,7 @@ class Task:
     task = self.remove_tags(set(tags))
     tag = tags.pop()
     if len(tags) > 0:
-      log.warn("Discarding duplicate tags: %s" % tags)
+      log.warning("Discarding duplicate tags: %s" % tags)
     return tag, task
 
   def set_priority(self, priority):
@@ -639,7 +639,7 @@ class ReviewTaskSlice(TaskSlice):
       interval = self.priority_to_interval[task.priority]
       return age >= interval
     else:
-      log.warn("Priority %s is not configured in TODOTXT_SLICE_REVIEW_INTERVALS. Ignoring task: %s" % (task.priority.normalize(explicit_no_level = True), task.line))
+      log.warning("Priority %s is not configured in TODOTXT_SLICE_REVIEW_INTERVALS. Ignoring task: %s" % (task.priority.normalize(explicit_no_level = True), task.line))
       return False
 
   def apply(self, task):
@@ -696,9 +696,9 @@ class SliceEditor:
           if tmpid in self.editable_tasks: # safety check
             id = tmpid
           else:
-            log.warn("Ignoring unknown id: %s" % id_tag)
+            log.warning("Ignoring unknown id: %s" % id_tag)
         except ValueError:
-          log.warn("Ignoring invalid id: %s" % id_tag)
+          log.warning("Ignoring invalid id: %s" % id_tag)
       if id is None:
         id = next_id
         next_id += 1
@@ -842,7 +842,7 @@ def build_match_slice(env, args):
       tag = Tag.parse(arg)
       tags.add(tag)
     except ValueError:
-      log.warn("Error parsing args '%s': expected [PRIORITY] [TAG...]" % argstr)
+      log.warning("Error parsing args '%s': expected [PRIORITY] [TAG...]" % argstr)
       sys.exit(1)
 
   return MatchTaskSlice(env, priority, tags)
@@ -856,7 +856,7 @@ def build_review_slice(env, args):
   for priority_interval_str in priority_interval_strs:
     pair = priority_interval_str.split(":")
     if len(pair) != 2:
-      log.warn("Error parsing %s='%s': expected <priority>:<interval> pairs separated by commas" % (key, value))
+      log.warning("Error parsing %s='%s': expected <priority>:<interval> pairs separated by commas" % (key, value))
       sys.exit(1)
 
     [priority_level, interval_str] = pair
@@ -864,13 +864,13 @@ def build_review_slice(env, args):
     try:
       priority = Priority.parse("(%s)" % priority_level)
     except ValueError:
-      log.warn("Error parsing %s='%s': %s is not a priority" % (key, value, priority_level))
+      log.warning("Error parsing %s='%s': %s is not a priority" % (key, value, priority_level))
       sys.exit(1)
 
     try:
       interval = int(interval_str)
     except ValueError:
-      log.warn("Error parsing %s='%s': %s is not an integer" % (key, value, interval_str))
+      log.warning("Error parsing %s='%s': %s is not an integer" % (key, value, interval_str))
       sys.exit(1)
 
     priority_to_interval[priority] = timedelta(days = interval)
