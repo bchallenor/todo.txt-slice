@@ -273,7 +273,6 @@ class Tag:
 class ContextTag(Tag):
   def __init__(self, name):
     Tag.__init__(self, "@" + name)
-    self.key = self.raw
     self.name = name
 
   def sort_key(self):
@@ -283,7 +282,6 @@ class ContextTag(Tag):
 class ProjectTag(Tag):
   def __init__(self, name):
     Tag.__init__(self, "+" + name)
-    self.key = self.raw
     self.name = name
 
   def sort_key(self):
@@ -431,13 +429,13 @@ class Task:
     return Task(Tag.join_tokens(tokens), self.priority, self.create_date, self.complete_date)
 
   def remove_duplicate_tags(self):
-    tag_keys = set()
+    tags = set()
     tokens = []
 
     for token in self.tokens:
       if isinstance(token, Tag):
-        if token.key not in tag_keys:
-          tag_keys.add(token.key)
+        if token not in tags:
+          tags.add(token)
           tokens.append(token)
         else:
           log.warn("Discarding duplicate tag: %s" % token)
@@ -447,8 +445,7 @@ class Task:
     return Task(Tag.join_tokens(tokens), self.priority, self.create_date, self.complete_date)
 
   def add_tags(self, tags, trailing = True):
-    tag_keys = { tag.key for tag in tags }
-    rem_tokens = [token for token in self.tokens if not isinstance(token, Tag) or token.key not in tag_keys]
+    rem_tokens = [token for token in self.tokens if not isinstance(token, Tag) or token not in tags]
     tokens = rem_tokens + list(tags) if trailing else list(tags) + rem_tokens
     return Task(Tag.join_tokens(tokens), self.priority, self.create_date, self.complete_date)
 

@@ -343,13 +343,15 @@ class AbstractSliceTest:
         expect_warnings = True
         )
 
-  def test_conflicting_key_value_tags_normalized(self):
+  # the spec is unclear on whether duplicates are permitted here
+  # let's err on the side of caution and assume they are permitted
+  def test_key_value_tags_with_same_key_and_different_values_not_normalized(self):
     self.run_test(
         todo0 = [],
         edit0 = [],
         edit1 = ["x k:v1 k:v2"],
-        todo1 = ["x k:v1"],
-        expect_warnings = True
+        todo1 = ["x k:v1 k:v2"],
+        expect_warnings = False
         )
 
   def test_redundant_start_date_normalized(self):
