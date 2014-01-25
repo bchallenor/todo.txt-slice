@@ -268,6 +268,15 @@ class AbstractSliceTest:
         todo1 = ["x"],
         )
 
+  # regression test
+  def test_insert_task_with_priority(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["(A) x"],
+        todo1 = ["(A) x"],
+        )
+
   def test_insert_task_with_date(self):
     self.run_test(
         todo0 = [],

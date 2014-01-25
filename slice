@@ -658,7 +658,7 @@ class ReviewTaskSlice(TaskSlice):
     else:
       # failed review; restore create_date and priority
       task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date())
-      task = task.set_priority(original_task.priority if original_task else Priority(None))
+      task = task.set_priority(original_task.priority if original_task else task.priority if task.priority.level else Priority(None))
 
     return task
 
