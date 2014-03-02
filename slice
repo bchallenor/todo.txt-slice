@@ -170,7 +170,7 @@ class Tag:
     else:
       assert key and value, "key and value should be captured if prefix is not: %s" % raw
       tag = KeyValueTag(key, value)
-    assert tag.raw == raw, "parsing should not lose information: <%> != <%s>" % (tag.raw, raw)
+    assert tag.raw == raw, "parsing should not lose information: <%s> != <%s>" % (tag.raw, raw)
     return tag
 
   @classmethod
