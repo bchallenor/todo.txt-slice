@@ -407,6 +407,15 @@ class AbstractSliceTest:
         expect_warnings = True
         )
 
+  # regression test
+  def test_tags_not_matched_without_preceding_whitespace_or_start_of_string(self):
+    self.run_test(
+        todo0 = [],
+        edit0 = [],
+        edit1 = ["word@x word@@x word+x word++x"],
+        todo1 = ["word@x word@@x word+x word++x"]
+        )
+
 
 class AbstractSliceAllTest(AbstractSliceTest):
   def test_comment_header(self):

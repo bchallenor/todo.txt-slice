@@ -143,6 +143,11 @@ class Priority:
 class Tag:
   __tag_re = re.compile(r"""
     (
+      (?<= \s )           # tag must be preceded by whitespace
+    |
+      (?<= \A )           # or start of string
+    )
+    (
       (?P<prefix> [@+] )  # project/context prefix
       (?P<name> \S+ )     # name
     |
