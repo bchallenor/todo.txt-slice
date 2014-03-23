@@ -586,6 +586,15 @@ class AbstractSliceAllTest(AbstractSliceTest):
         )
 
 
+class SliceAllTest(AbstractSliceAllTest, unittest.TestCase):
+  slice_name = "all"
+  export = {}
+
+  # Any tests for "all" should go in AbstractSliceAllTest instead,
+  # so the tests for the "terms" and "tags" slices can inherit them too.
+  # The "terms" and "tags" slices should behave identically when they have no arguments.
+
+
 class SliceTermsTest(AbstractSliceAllTest, unittest.TestCase):
   slice_name = "terms"
   export = {}

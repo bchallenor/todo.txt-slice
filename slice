@@ -515,6 +515,24 @@ class TaskSlice:
     raise NotImplementedError
 
 
+class AllTaskSlice(TaskSlice):
+  def comments(self):
+    return ["All tasks"]
+
+  def matches(self, task):
+    return True
+
+  def apply(self, task):
+    sliced_task = task
+    sliced_task = sliced_task.set_create_date(None)
+    return sliced_task
+
+  def unapply(self, sliced_task, original_task):
+    task = sliced_task
+    task = task.set_create_date(original_task.create_date if original_task else self.env.default_create_date())
+    return task
+
+
 class FutureTaskSlice(TaskSlice):
   def __init__(self, env):
     TaskSlice.__init__(self, env)
@@ -765,6 +783,9 @@ def usage():
   print("    Note: The -t, -n and -x options of todo.sh are supported.")
   print("          These should be placed before 'slice'.")
   print()
+  print("    all")
+  print("      Opens all tasks.")
+  print()
   print("    future")
   print("      Opens tasks with a start date (t:<date>) in the future, sorted by start date.")
   print()
@@ -811,6 +832,10 @@ def usage():
   print("      - 'C' tasks should be reviewed after 56 days")
   print("      - 'Z' tasks should be reviewed after 182 days")
   print()
+
+
+def build_all_slice(env, args):
+  return AllTaskSlice(env)
 
 
 def build_future_slice(env, args):
@@ -888,6 +913,7 @@ def build_review_slice(env, args):
 
 def build_slice(env, name, args):
   slices = {
+    "all": build_all_slice,
     "future": build_future_slice,
     "terms": build_terms_slice,
     "tags": build_tags_slice,
