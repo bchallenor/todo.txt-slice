@@ -579,6 +579,12 @@ class AbstractSliceAllTest(AbstractSliceTest):
         expect_warnings = True
         )
 
+  def test_hides_but_preserves_date(self):
+    self.run_test(
+        todo0 = ["(A) 1999-12-31 a"],
+        edit0 = ["(A) i:1 a"]
+        )
+
 
 class SliceTermsTest(AbstractSliceAllTest, unittest.TestCase):
   slice_name = "terms"
@@ -663,13 +669,6 @@ class SliceTermsTest(AbstractSliceAllTest, unittest.TestCase):
         slice_args = ["@c"],
         todo0 = ["x", "a @c"],
         edit0 = ["i:2 a @c"]
-        )
-
-  def test_hides_but_preserves_date(self):
-    self.run_test(
-        slice_args = [],
-        todo0 = ["(A) 1999-12-31 a"],
-        edit0 = ["(A) i:1 a"]
         )
 
 
@@ -761,13 +760,6 @@ class SliceTagsTest(AbstractSliceAllTest, unittest.TestCase):
         edit0 = [],
         expect_warnings = True,
         expect_clean_exit = False
-        )
-
-  def test_hides_but_preserves_date(self):
-    self.run_test(
-        slice_args = ["A"],
-        todo0 = ["(A) 1999-12-31 a"],
-        edit0 = ["i:1 a"]
         )
 
   def test_forged_id_tag_ignored(self):
