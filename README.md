@@ -57,7 +57,7 @@ Slice works on Linux, Mac OS X and Windows (Cygwin). It requires Python 3.
 
 To install Slice, copy the `slice` file to your `todo.txt` add-on directory.
 
-For more information see [Creating and Installing Add ons](https://github.com/ginatrapani/todo.txt-cli/wiki/Creating-and-Installing-Add-ons) on the `todo.txt` wiki.
+For more information see [Installing Add-ons](https://github.com/ginatrapani/todo.txt-cli/wiki/Creating-and-Installing-Add-ons#installing-add-ons) on the `todo.txt` wiki.
 
 
 Tests
