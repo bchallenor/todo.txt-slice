@@ -8,10 +8,10 @@ Several different "slices" are provided:
 - _all_ opens all tasks
 - _terms_ opens tasks matching the given search terms
 - _tags_ opens tasks matching the given priority or tags; any new tasks created will automatically have these applied
-- _future_ opens tasks with a start date (t:<date>) in the future (compatible with the [future-tasks](https://github.com/ginatrapani/todo.txt-cli/wiki/Todo.sh-Add-on-Directory#future-tasks) plugin)
+- _future_ opens tasks with a start date (`t:<date>`) in the future (compatible with the [future-tasks](https://github.com/ginatrapani/todo.txt-cli/wiki/Todo.sh-Add-on-Directory#future-tasks) plugin)
 - _review_ opens tasks that need reviewing, based on their age and priority
 
-Slice works best if your `EDITOR` has a plugin for the `todo.txt` format. For example, in vim, you can use [todo.txt-vim](https://github.com/freitass/todo.txt-vim).
+Slice works best if your `EDITOR` has a plugin for the `todo.txt` format. For example, in Vim you can use [todo.txt-vim](https://github.com/freitass/todo.txt-vim).
 
 
 Example
@@ -53,11 +53,11 @@ Note that `+Report` has been automatically applied to the new task. If you like 
 Installation
 ------------
 
-Slice is [installed](https://github.com/ginatrapani/todo.txt-cli/wiki/Creating-and-Installing-Add-ons) like any other add-on.
+Slice works on Linux, Mac OS X and Windows (Cygwin). It requires Python 3.
 
-You will need Python 3.
+To install Slice, copy the `slice` file to your `todo.txt` add-on directory.
 
-Slice works on Linux, Mac OS X and Windows (Cygwin).
+For more information see [Creating and Installing Add ons](https://github.com/ginatrapani/todo.txt-cli/wiki/Creating-and-Installing-Add-ons) on the `todo.txt` wiki.
 
 
 Tests
