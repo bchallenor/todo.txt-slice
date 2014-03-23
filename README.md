@@ -1,7 +1,7 @@
 todo.txt-slice: Slices tasks for batch editing
 ============================================================
 
-Slice is a plugin for [todo.txt](http://todotxt.com/). It "slices" a subset of your `todo.txt` tasks into your favourite `EDITOR` for batch editing. After you save and close your `EDITOR`, it merges the edited tasks back into your `todo.txt` file, printing a colorized diff to the console so you can easily see what has changed.
+Slice is a plugin for [todo.txt](http://todotxt.com/). It "slices" a subset of your `todo.txt` tasks into your favourite `$EDITOR` for batch editing. After you save and close your `$EDITOR`, it merges the edited tasks back into your `todo.txt` file, printing a colorized diff to the console so you can easily see what has changed.
 
 Several different "slices" are provided:
 
@@ -11,7 +11,7 @@ Several different "slices" are provided:
 - _future_ opens tasks with a start date (`t:<date>`) in the future (compatible with the [future-tasks](https://github.com/ginatrapani/todo.txt-cli/wiki/Todo.sh-Add-on-Directory#future-tasks) plugin)
 - _review_ opens tasks that need reviewing, based on their age and priority
 
-Slice works best if your `EDITOR` has a plugin for the `todo.txt` format. For example, in Vim you can use [todo.txt-vim](https://github.com/freitass/todo.txt-vim).
+Slice works best if your `$EDITOR` has a plugin for the `todo.txt` format. For example, in Vim you can use [todo.txt-vim](https://github.com/freitass/todo.txt-vim).
 
 
 Example
@@ -23,7 +23,7 @@ Imagine we want to work on the `+Report` project. For this we'll want the _tags_
 todo.sh slice tags +Report
 ```
 
-Slice opens all the tasks tagged with `+Report` in our `EDITOR`:
+Slice opens all the tasks tagged with `+Report` in our `$EDITOR`:
 
 ```
 (B) i:2 Write introduction chapter @Computer
@@ -38,7 +38,7 @@ x 2014-01-01 (B) i:2 Write introduction chapter @Computer
 (B) Collect results @Lab
 ```
 
-If we close the editor, Slice will write these changes back to our todo file:
+If we close our editor, Slice will write these changes back to our todo file:
 
 ```
 ...
