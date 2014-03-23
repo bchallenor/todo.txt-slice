@@ -580,8 +580,8 @@ class AbstractSliceAllTest(AbstractSliceTest):
         )
 
 
-class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
-  slice_name = "list"
+class SliceTermsTest(AbstractSliceAllTest, unittest.TestCase):
+  slice_name = "terms"
   export = {}
 
   def test_comment_header_included_terms(self):
@@ -614,7 +614,7 @@ class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
         strip_edit0_comments = False
         )
 
-  def test_list_task_with_term(self):
+  def test_match_task_with_term(self):
     self.run_test(
         slice_args = ["x"],
         todo0 = ["x", "y"],
@@ -622,14 +622,14 @@ class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
         )
 
   # regression test
-  def test_list_task_with_term_case_insensitive(self):
+  def test_match_task_with_term_case_insensitive(self):
     self.run_test(
         slice_args = ["X"],
         todo0 = ["x", "y"],
         edit0 = ["i:1 x"]
         )
 
-  def test_list_task_with_excluded_term(self):
+  def test_match_task_without_excluded_term(self):
     self.run_test(
         slice_args = ["-x"],
         todo0 = ["x", "y"],
@@ -637,35 +637,35 @@ class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
         )
 
   # regression test
-  def test_list_task_with_excluded_term_case_insensitive(self):
+  def test_match_task_without_excluded_term_case_insensitive(self):
     self.run_test(
         slice_args = ["-X"],
         todo0 = ["x", "y"],
         edit0 = ["i:2 y"]
         )
 
-  def test_list_task_with_multiple_terms(self):
+  def test_match_task_with_multiple_terms(self):
     self.run_test(
         slice_args = ["x", "y1"],
         todo0 = ["x y1", "y1 x", "x y2"],
         edit0 = ["i:1 x y1", "i:2 y1 x"]
         )
 
-  def test_list_task_with_included_and_excluded_terms(self):
+  def test_match_task_with_included_and_without_excluded_terms(self):
     self.run_test(
         slice_args = ["x", "-y1"],
         todo0 = ["x y1", "y1 x", "x y2"],
         edit0 = ["i:3 x y2"]
         )
 
-  def test_list_task_with_tag_does_not_strip_tag(self):
+  def test_does_not_strip_tag(self):
     self.run_test(
         slice_args = ["@c"],
         todo0 = ["x", "a @c"],
         edit0 = ["i:2 a @c"]
         )
 
-  def test_list_task_hides_but_preserves_date(self):
+  def test_hides_but_preserves_date(self):
     self.run_test(
         slice_args = [],
         todo0 = ["(A) 1999-12-31 a"],
@@ -673,8 +673,8 @@ class SliceListTest(AbstractSliceAllTest, unittest.TestCase):
         )
 
 
-class SliceMatchTest(AbstractSliceAllTest, unittest.TestCase):
-  slice_name = "match"
+class SliceTagsTest(AbstractSliceAllTest, unittest.TestCase):
+  slice_name = "tags"
   export = {}
 
   def test_comment_header_priority(self):
@@ -754,7 +754,7 @@ class SliceMatchTest(AbstractSliceAllTest, unittest.TestCase):
         )
 
   # regression test
-  def test_match_task_with_unparseable_tag(self):
+  def test_unparseable_tag(self):
     self.run_test(
         slice_args = ["not_a_tag"],
         todo0 = [],
@@ -763,7 +763,7 @@ class SliceMatchTest(AbstractSliceAllTest, unittest.TestCase):
         expect_clean_exit = False
         )
 
-  def test_match_task_hides_but_preserves_date(self):
+  def test_hides_but_preserves_date(self):
     self.run_test(
         slice_args = ["A"],
         todo0 = ["(A) 1999-12-31 a"],

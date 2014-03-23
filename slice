@@ -542,7 +542,7 @@ class FutureTaskSlice(TaskSlice):
     return task
 
 
-class ListTaskSlice(TaskSlice):
+class TermsTaskSlice(TaskSlice):
   def __init__(self, env, inc_terms, exc_terms):
     TaskSlice.__init__(self, env)
     self.inc_terms = [term.lower() for term in inc_terms]
@@ -585,7 +585,7 @@ class ListTaskSlice(TaskSlice):
     return task
 
 
-class MatchTaskSlice(TaskSlice):
+class TagsTaskSlice(TaskSlice):
   def __init__(self, env, priority = None, tags = set()):
     TaskSlice.__init__(self, env)
     self.priority = priority
@@ -768,12 +768,12 @@ def usage():
   print("    future")
   print("      Opens tasks with a start date (t:<date>) in the future, sorted by start date.")
   print()
-  print("    list [TERM...]")
-  print("      Opens tasks including all TERM(s).")
+  print("    terms [TERM...]")
+  print("      Opens tasks matching all TERM(s).")
   print("      TERM(s) preceded by a minus sign (i.e. -TERM) are excluded rather than included.")
   print("      If no TERM(s) are supplied, all tasks will be opened.")
   print()
-  print("    match [PRIORITY] [TAG...]")
+  print("    tags [PRIORITY] [TAG...]")
   print("      Opens tasks matching PRIORITY and/or TAG(s).")
   print("      After editing, PRIORITY and TAG(s) will be applied to all edited tasks.")
   print("      If neither PRIORITY nor TAG(s) are supplied, all tasks will be opened.")
@@ -781,11 +781,11 @@ def usage():
   print("      PRIORITY must be a letter, A-Z, or an underscore, indicating an unprioritized task.")
   print("      TAG(s) can be @contexts, +projects or custom key:value extensions.")
   print()
-  print("      'match' differs from 'list' in that:")
+  print("      'tags' differs from 'terms' in that:")
   print("      - PRIORITY and TAG(s) will be hidden during editing")
   print("      - PRIORITY and TAG(s) will be automatically applied to all edited tasks")
-  print("      - 'match' can only work with PRIORITY and TAG(s), whereas 'list' can match any text")
-  print("      - 'match' can only perform positive matches, whereas 'list' can exclude terms")
+  print("      - 'tags' can only match PRIORITY and TAG(s), whereas 'terms' can match any text")
+  print("      - 'tags' can only perform positive matches, whereas 'terms' can exclude terms")
   print()
   print("    review")
   print("      Opens tasks for review:")
@@ -817,7 +817,7 @@ def build_future_slice(env, args):
   return FutureTaskSlice(env)
 
 
-def build_list_slice(env, args):
+def build_terms_slice(env, args):
   inc_terms = []
   exc_terms = []
 
@@ -827,10 +827,10 @@ def build_list_slice(env, args):
     else:
       inc_terms.append(term)
 
-  return ListTaskSlice(env, inc_terms, exc_terms)
+  return TermsTaskSlice(env, inc_terms, exc_terms)
 
 
-def build_match_slice(env, args):
+def build_tags_slice(env, args):
   priority = None
   tags = set()
   argstr = " ".join(args)
@@ -853,7 +853,7 @@ def build_match_slice(env, args):
       log.warning("Error parsing args '%s': expected [PRIORITY] [TAG...]" % argstr)
       sys.exit(1)
 
-  return MatchTaskSlice(env, priority, tags)
+  return TagsTaskSlice(env, priority, tags)
 
 
 def build_review_slice(env, args):
@@ -889,8 +889,8 @@ def build_review_slice(env, args):
 def build_slice(env, name, args):
   slices = {
     "future": build_future_slice,
-    "list": build_list_slice,
-    "match": build_match_slice,
+    "terms": build_terms_slice,
+    "tags": build_tags_slice,
     "review": build_review_slice
   }
 
