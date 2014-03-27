@@ -749,8 +749,10 @@ class SliceEditor:
         # normalize tag order etc
         task = task.normalize(self.env.today())
 
-        self.env.print_diff(id, self.max_id_len, existing_task, task)
-        merged_tasks[id] = task
+        is_edited_after_normalize = task != existing_task
+        if is_edited_after_normalize:
+            self.env.print_diff(id, self.max_id_len, existing_task, task)
+            merged_tasks[id] = task
 
     return merged_tasks
 

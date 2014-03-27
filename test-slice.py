@@ -817,6 +817,16 @@ class SliceTagsTest(AbstractSliceAllTest, unittest.TestCase):
         todo1 = ["x", "(A) y @c +p k:v", "(A) a +q"]
         )
 
+  # regression test
+  def test_edit_task_explicitly_readding_hidden_tag(self):
+    self.run_test(
+        slice_args = ["@c"],
+        todo0 = ["a @c"],
+        edit0 = ["i:1 a"],
+        edit1 = ["i:1 a @c"],
+        todo1 = ["a @c"]
+        )
+
 
 class SliceReviewTest(AbstractSliceTest, unittest.TestCase):
   slice_name = "review"
